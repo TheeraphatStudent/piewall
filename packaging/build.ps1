@@ -4,8 +4,8 @@
 
 .DESCRIPTION
   1. uv sync (locked)            4. Inno Setup -> piewall-setup.exe (from the onedir build)
-  2. PyInstaller onedir build    5. copy piewall.exe, piewall-cli.exe (onefile), piewall-setup.exe
-  3. PyInstaller onefile build      to dist\release and write SHA256SUMS.txt
+  2. PyInstaller onedir build    5. copy piewall.exe, piewall-cli.exe, piewall-mcp.exe (onefile) and
+  3. PyInstaller onefile build      piewall-setup.exe to dist\release, write SHA256SUMS.txt
 
   Safe to re-run: every output folder is wiped first. Any failing step stops the script.
   Works on Windows PowerShell 5.1 and PowerShell 7.
@@ -93,7 +93,8 @@ try {
 
     # --- Code signing (disabled; see packaging/README.md) ------------------------------------
     # Sign the exes BEFORE Inno Setup packs them, then sign the installer after it is built.
-    # $toSign = @("$OneDir\piewall.exe", "$OneDir\piewall-cli.exe", "$OneFile\piewall.exe", "$OneFile\piewall-cli.exe")
+    # $toSign = @("$OneDir\piewall.exe", "$OneDir\piewall-cli.exe", "$OneDir\piewall-mcp.exe",
+    #             "$OneFile\piewall.exe", "$OneFile\piewall-cli.exe", "$OneFile\piewall-mcp.exe")
     # Azure Trusted Signing:
     #   signtool sign /v /fd SHA256 /tr http://timestamp.acs.microsoft.com /td SHA256 `
     #     /dlib "$env:TRUSTED_SIGNING_DLIB" /dmdf packaging\signing-metadata.json $toSign
@@ -111,6 +112,7 @@ try {
     $assets = @(
         (Join-Path $OneFile 'piewall.exe'),
         (Join-Path $OneFile 'piewall-cli.exe'),
+        (Join-Path $OneFile 'piewall-mcp.exe'),
         (Join-Path $InstallerOut 'piewall-setup.exe')
     )
     foreach ($a in $assets) {

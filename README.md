@@ -77,6 +77,44 @@ Commands that change rules ask for administrator rights through UAC and print
 the result in the same terminal. Exit codes: `0` ok, `1` error / nothing matched
 / conflicts found, `2` usage, `3` UAC prompt cancelled.
 
+## Use with AI agents
+
+**Skill** (Claude Code, Codex, Cursor and other agents that support Agent Skills):
+
+```bash
+npx skills add TheeraphatStudent/piewall
+```
+
+It teaches the agent to diagnose "port refuses to connect", read before changing, and stay
+inside safe defaults. See [`skills/piewall/SKILL.md`](skills/piewall/SKILL.md).
+
+**MCP server** on Windows (live firewall; every change asks you through UAC):
+
+```bash
+claude mcp add piewall -- npx -y piewall-mcp        # Claude Code
+```
+
+```json
+{ "mcpServers": { "piewall": { "command": "npx", "args": ["-y", "piewall-mcp"] } } }
+```
+
+Tools: `status`, `list_rules`, `rule_details`, `find_conflicts`, `open_port`, `close_port`,
+`set_rule_enabled`, `set_rule_action`, `delete_rule`, `export_rules`.
+
+**Container** ([`th33raphat/piewall`](https://hub.docker.com/r/th33raphat/piewall), any OS,
+read-only): a container can't reach the Windows host firewall, so it analyses an export.
+
+```bash
+piewall-cli export rules.json                                   # on Windows
+podman run -i --rm -v ./rules.json:/data/rules.json:ro docker.io/th33raphat/piewall
+# HTTP instead of stdio:
+podman run --rm -p 8000:8000 -e PIEWALL_TRANSPORT=streamable-http -e PIEWALL_HOST=0.0.0.0 \
+  -v ./rules.json:/data/rules.json:ro docker.io/th33raphat/piewall   # http://localhost:8000/mcp
+```
+
+`docker` works the same way. More: [`npm/piewall-mcp/README.md`](npm/piewall-mcp/README.md),
+[`docker/README.md`](docker/README.md).
+
 ## Develop
 
 Needs [uv](https://docs.astral.sh/uv/) and Windows 10/11.

@@ -1,0 +1,21 @@
+# Build context for Containerfile: only pyproject.toml, uv.lock, README.md, LICENSE and src/ are used.
+.git
+.github
+.venv
+.pytest_cache
+**/__pycache__
+**/*.pyc
+build
+dist
+site
+node_modules
+**/node_modules
+npm
+docs/images
+brand
+graphify-out
+packaging
+tests
+*.exe
+*.json
+!src/**/*.json

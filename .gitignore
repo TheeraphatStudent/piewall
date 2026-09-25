@@ -12,3 +12,4 @@ site/dist/
 .wrangler/
 *.exe
 !packaging/**
+!npm/*/package.json

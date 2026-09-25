@@ -1,9 +1,10 @@
 # -*- mode: python ; coding: utf-8 -*-
 """PyInstaller spec for piewall.
 
-Builds two executables from the same code:
-  piewall.exe      windowed GUI  (piewall.gui:main)
-  piewall-cli.exe  console CLI   (piewall.cli:main)
+Builds three executables from the same code:
+  piewall.exe      windowed GUI       (piewall.gui:main)
+  piewall-cli.exe  console CLI        (piewall.cli:main)
+  piewall-mcp.exe  console MCP server (piewall.mcp_server:main)
 
 PIEWALL_MODE picks the layout (packaging/build.ps1 runs both):
   onedir   (default) both exes share one _internal folder; used by the installer.
@@ -19,7 +20,7 @@ import re
 import tomllib
 from pathlib import Path
 
-from PyInstaller.utils.hooks import collect_data_files
+from PyInstaller.utils.hooks import collect_data_files, collect_submodules, copy_metadata
 
 MODE = os.environ.get("PIEWALL_MODE", "onedir").lower()
 if MODE not in ("onedir", "onefile"):
@@ -82,13 +83,37 @@ EXCLUDES = [
 DROP_DATA = ("_tcl_data/tzdata/", "_tcl_data/msgs/", "_tk_data/msgs/")
 
 
-def analysis(script: str):
+# The MCP server needs what the GUI/CLI leave out: ssl (uvicorn, httpx2 import it at start-up) and
+# the mcp SDK's lazily imported modules (transports, pydantic models) plus their dist metadata.
+MCP_KEEP = {"_hashlib", "_ssl", "ssl", "_decimal", "unittest"}
+MCP_EXCLUDES = [m for m in EXCLUDES if m not in MCP_KEEP] + [
+    "sv_ttk", "darkdetect", "tkinter", "_tkinter", "piewall.gui", "piewall.theme",  # console only
+]
+MCP_HIDDEN = [
+    "piewall.cli",  # piewall-mcp.exe <subcommand> runs the CLI (UAC relaunch target)
+    *collect_submodules("mcp", filter=lambda name: not name.startswith("mcp.cli")),
+    *collect_submodules("mcp_types"),
+    *collect_submodules("sse_starlette"),
+    *collect_submodules("starlette"),
+    *collect_submodules("uvicorn"),
+    "win32com.client.dynamic", "win32com.shell.shell",
+]
+MCP_DATAS = [
+    (str(SRC / "piewall" / "assets"), "piewall/assets"),
+    # piewall: mcp_server.version() reads it via importlib.metadata.
+    *[m for pkg in ("piewall", "mcp", "mcp_types", "pydantic", "pydantic_core", "starlette", "uvicorn", "anyio",
+                    "sse_starlette", "httpx2", "jsonschema", "opentelemetry_api", "pyjwt", "python_multipart")
+      for m in copy_metadata(pkg)],
+]
+
+
+def analysis(script: str, *, datas=DATAS, hidden=HIDDEN, excludes=EXCLUDES):
     a = Analysis(  # noqa: F821
         [str(HERE / script)],
         pathex=[str(SRC)],
-        datas=DATAS,
-        hiddenimports=HIDDEN,
-        excludes=EXCLUDES,
+        datas=datas,
+        hiddenimports=hidden,
+        excludes=excludes,
         noarchive=False,
         optimize=1,  # strip asserts; keep docstrings
     )
@@ -98,6 +123,7 @@ def analysis(script: str):
 
 gui_a = analysis("piewall_gui.py")
 cli_a = analysis("piewall_cli.py")
+mcp_a = analysis("piewall_mcp.py", datas=MCP_DATAS, hidden=MCP_HIDDEN, excludes=MCP_EXCLUDES)
 
 
 def exe(a, name: str, *, console: bool, description: str):
@@ -122,11 +148,14 @@ def exe(a, name: str, *, console: bool, description: str):
 gui_exe = exe(gui_a, "piewall", console=False, description="piewall - Windows Firewall rules")
 cli_exe = exe(cli_a, "piewall-cli", console=True,
               description="piewall command line - Windows Firewall rules")
+mcp_exe = exe(mcp_a, "piewall-mcp", console=True,
+              description="piewall MCP server - Windows Firewall rules")
 
 if MODE == "onedir":
     COLLECT(  # noqa: F821
         gui_exe, gui_a.binaries, gui_a.datas,
         cli_exe, cli_a.binaries, cli_a.datas,
+        mcp_exe, mcp_a.binaries, mcp_a.datas,
         strip=False,
         upx=False,
         name="piewall",

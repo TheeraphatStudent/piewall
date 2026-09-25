@@ -1,0 +1,136 @@
+name: Container
+
+# Tags v* (and manual runs): build linux/amd64 + linux/arm64 and push docker.io/th33raphat/piewall
+# as <version>, <major>.<minor> and latest (pre-releases get only <version>).
+# Pushes to main and pull requests: build and smoke-test only, nothing is pushed.
+
+on:
+  push:
+    branches: [main]
+    tags: ["v*"]
+    paths-ignore: ["site/**", "brand/**", "docs/**", "npm/**", "packaging/**"]
+  pull_request:
+    paths-ignore: ["site/**", "brand/**", "docs/**", "npm/**", "packaging/**"]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: container-${{ github.ref }}
+  cancel-in-progress: ${{ !startsWith(github.ref, 'refs/tags/') }}
+
+env:
+  IMAGE: docker.io/th33raphat/piewall
+  DOCKERHUB_REPO: th33raphat/piewall
+
+jobs:
+  image:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+
+      - name: Version
+        id: v
+        env:
+          EVENT: ${{ github.event_name }}
+          REF_TYPE: ${{ github.ref_type }}
+          TAG: ${{ github.ref_name }}
+        run: |
+          version=$(sed -n 's/^version *= *"\([^"]*\)".*/\1/p' pyproject.toml | head -n1)
+          if [ -z "$version" ]; then echo "::error::no version in pyproject.toml"; exit 1; fi
+          if [ "$REF_TYPE" = tag ] && [ "$TAG" != "v$version" ]; then
+            echo "::error::tag $TAG does not match pyproject.toml version $version"; exit 1
+          fi
+          push=false
+          if [ "$REF_TYPE" = tag ] || [ "$EVENT" = workflow_dispatch ]; then push=true; fi
+          prerelease=false
+          case "$version" in *[a-zA-Z-]*) prerelease=true ;; esac
+          {
+            echo "version=$version"
+            echo "minor=$(echo "$version" | cut -d. -f1-2)"
+            echo "prerelease=$prerelease"
+            echo "push=$push"
+          } >> "$GITHUB_OUTPUT"
+
+      - uses: docker/setup-qemu-action@99012661954931238ded8c8b007157a8430204e1 # v4.4.0
+        with:
+          platforms: arm64
+
+      - uses: docker/setup-buildx-action@f87e5991a6d7451dcb8d9637bfbc97413f497069 # v4.4.1
+
+      - uses: docker/metadata-action@dc802804100637a589fabce1cb79ff13a1411302 # v6.2.0
+        id: meta
+        with:
+          images: ${{ env.IMAGE }}
+          flavor: latest=false
+          tags: |
+            type=raw,value=${{ steps.v.outputs.version }}
+            type=raw,value=${{ steps.v.outputs.minor }},enable=${{ steps.v.outputs.prerelease == 'false' }}
+            type=raw,value=latest,enable=${{ steps.v.outputs.prerelease == 'false' }}
+          labels: |
+            org.opencontainers.image.title=piewall
+            org.opencontainers.image.description=piewall MCP server: read-only analysis of exported Windows Firewall rules
+            org.opencontainers.image.url=https://piewall.th33raphat.dev
+            org.opencontainers.image.licenses=MIT
+            org.opencontainers.image.version=${{ steps.v.outputs.version }}
+
+      # Build amd64 into the local daemon first and prove it speaks MCP before anything is pushed.
+      - name: Build (amd64, local)
+        uses: docker/build-push-action@c3c9e263c25d99ce0380d002d59b67737d91b0dc # v7.4.0
+        with:
+          context: .
+          file: Containerfile
+          platforms: linux/amd64
+          build-args: VERSION=${{ steps.v.outputs.version }}
+          load: true
+          tags: piewall:ci
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+
+      - name: Smoke test (MCP initialize + tools/list over stdio)
+        run: |
+          echo '{"version": 1, "rules": []}' > "$RUNNER_TEMP/rules.json"
+          out=$(printf '%s\n' \
+            '{"jsonrpc":"2.0","id":1,"method":"initialize","params":{"protocolVersion":"2025-06-18","capabilities":{},"clientInfo":{"name":"ci","version":"0"}}}' \
+            '{"jsonrpc":"2.0","method":"notifications/initialized"}' \
+            '{"jsonrpc":"2.0","id":2,"method":"tools/list"}' \
+            | timeout 60 docker run -i --rm -v "$RUNNER_TEMP/rules.json:/data/rules.json:ro" piewall:ci)
+          echo "$out"
+          echo "$out" | grep -q '"serverInfo"'
+          echo "$out" | grep -q '"list_rules"'
+
+      - name: Log in to Docker Hub
+        if: steps.v.outputs.push == 'true'
+        uses: docker/login-action@dbcb813823bdd20940b903addbd779551569679f # v4.6.0
+        with:
+          username: ${{ secrets.DOCKERHUB_USERNAME }}
+          password: ${{ secrets.DOCKERHUB_TOKEN }}
+
+      - name: Build (amd64 + arm64) and push
+        uses: docker/build-push-action@c3c9e263c25d99ce0380d002d59b67737d91b0dc # v7.4.0
+        with:
+          context: .
+          file: Containerfile
+          platforms: linux/amd64,linux/arm64
+          build-args: VERSION=${{ steps.v.outputs.version }}
+          push: ${{ steps.v.outputs.push == 'true' }}
+          tags: ${{ steps.meta.outputs.tags }}
+          labels: ${{ steps.meta.outputs.labels }}
+          provenance: mode=max
+          sbom: true
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+
+      - name: Update Docker Hub description
+        if: steps.v.outputs.push == 'true' && steps.v.outputs.prerelease == 'false'
+        uses: peter-evans/dockerhub-description@1b9a80c056b620d92cedb9d9b5a223409c68ddfa # v5.0.0
+        with:
+          username: ${{ secrets.DOCKERHUB_USERNAME }}
+          password: ${{ secrets.DOCKERHUB_TOKEN }}
+          repository: ${{ env.DOCKERHUB_REPO }}
+          short-description: Read-only MCP server for exported Windows Firewall rules (piewall)
+          readme-filepath: ./docker/README.md

@@ -29,7 +29,11 @@ jobs:
         with:
           enable-cache: true
 
-      - name: Check tag matches pyproject version
+      - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
+        with:
+          node-version: 22
+
+      - name: Check tag matches pyproject and npm versions
         id: version
         env:
           TAG: ${{ github.ref_name }}
@@ -39,6 +43,9 @@ jobs:
             Write-Error "Tag $env:TAG does not match pyproject.toml version $version (expected v$version)"
             exit 1
           }
+          # npm/piewall-mcp downloads piewall-mcp.exe from this release, so its version must match.
+          node npm/piewall-mcp/scripts/sync-version.mjs --check
+          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
           "version=$version" >> $env:GITHUB_OUTPUT
 
       - name: Install dependencies
@@ -46,6 +53,10 @@ jobs:
 
       - name: Run tests
         run: uv run pytest -q
+
+      - name: Test npm launcher
+        working-directory: npm/piewall-mcp
+        run: npm test
 
       - name: Install Inno Setup
         run: |
@@ -71,6 +82,7 @@ jobs:
           gh release create $env:TAG `
             dist/release/piewall.exe `
             dist/release/piewall-cli.exe `
+            dist/release/piewall-mcp.exe `
             dist/release/piewall-setup.exe `
             dist/release/SHA256SUMS.txt `
             --repo $env:GITHUB_REPOSITORY `
@@ -79,3 +91,45 @@ jobs:
             --verify-tag `
             @flags
           if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+
+  npm:
+    # Publish the npm launcher only once the release (and so piewall-mcp.exe) exists: the launcher
+    # downloads the exe from it.
+    needs: release
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    permissions:
+      contents: read
+      id-token: write  # npm provenance
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+
+      - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
+        with:
+          node-version: 22
+          registry-url: https://registry.npmjs.org
+
+      - name: Check the release has piewall-mcp.exe
+        env:
+          TAG: ${{ github.ref_name }}
+        run: |
+          curl -fsSL "https://github.com/${GITHUB_REPOSITORY}/releases/download/${TAG}/SHA256SUMS.txt" \
+            | grep -E '^[0-9a-f]{64}  piewall-mcp\.exe$'
+
+      - name: Test
+        working-directory: npm/piewall-mcp
+        run: |
+          node scripts/sync-version.mjs --check
+          npm test
+
+      - name: Publish
+        working-directory: npm/piewall-mcp
+        env:
+          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
+        run: |
+          version=$(node -p "require('./package.json').version")
+          tag=latest
+          case "$version" in *-*) tag=next ;; esac  # 0.2.0-rc1 must not become "latest"
+          npm publish --provenance --access public --tag "$tag"

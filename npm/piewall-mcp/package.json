@@ -1,0 +1,42 @@
+{
+  "name": "piewall-mcp",
+  "version": "0.2.0",
+  "description": "MCP server for piewall: list, analyse and manage Windows Firewall rules from AI assistants",
+  "type": "module",
+  "license": "MIT",
+  "author": "Theeraphat",
+  "homepage": "https://piewall.th33raphat.dev",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/TheeraphatStudent/piewall.git",
+    "directory": "npm/piewall-mcp"
+  },
+  "bugs": {
+    "url": "https://github.com/TheeraphatStudent/piewall/issues"
+  },
+  "keywords": [
+    "mcp",
+    "model-context-protocol",
+    "windows-firewall",
+    "firewall",
+    "piewall",
+    "windows"
+  ],
+  "bin": {
+    "piewall-mcp": "bin/piewall-mcp.js"
+  },
+  "exports": "./lib/launcher.js",
+  "files": [
+    "bin/",
+    "lib/",
+    "README.md",
+    "LICENSE"
+  ],
+  "engines": {
+    "node": ">=18"
+  },
+  "scripts": {
+    "test": "node --test",
+    "sync-version": "node scripts/sync-version.mjs"
+  }
+}
