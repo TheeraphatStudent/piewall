@@ -29,20 +29,43 @@ def _python(windowed: bool) -> str:
     return str(exe)
 
 
+# Frozen (PyInstaller) builds ship one exe per entry point instead of `python -m`.
+FROZEN_EXES = {"piewall": "piewall-cli.exe", "piewall.gui": "piewall.exe"}
+
+
+def _command(module_args: list[str], windowed: bool) -> tuple[str, str]:
+    """Return (file, parameters) that re-run `module_args` in a new process."""
+    if getattr(sys, "frozen", False):
+        module, *rest = module_args
+        try:
+            name = FROZEN_EXES[module]
+        except KeyError:
+            raise ValueError(f"no frozen executable for module {module!r}") from None
+        exe = Path(sys.executable)
+        target = exe.with_name(name)
+        # A renamed portable exe still relaunches itself (callers relaunch their own kind).
+        return str(target if target.exists() else exe), subprocess.list2cmdline(rest)
+    return _python(windowed), subprocess.list2cmdline(["-m", *module_args])
+
+
 def run_elevated(module_args: list[str], *, wait: bool, windowed: bool = False) -> int:
-    """Run `python -m <module_args>` elevated via UAC. Returns the exit code when waiting."""
+    """Run `python -m <module_args>` elevated via UAC. Returns the exit code when waiting.
+
+    In a frozen build the module is mapped to its exe next to sys.executable.
+    """
     import pywintypes
     import win32con
     import win32event
     import win32process
     from win32com.shell import shell, shellcon
 
+    file, parameters = _command(module_args, windowed)
     try:
         info = shell.ShellExecuteEx(
             fMask=shellcon.SEE_MASK_NOCLOSEPROCESS,
             lpVerb="runas",
-            lpFile=_python(windowed),
-            lpParameters=subprocess.list2cmdline(["-m", *module_args]),
+            lpFile=file,
+            lpParameters=parameters,
             lpDirectory=os.getcwd(),
             nShow=win32con.SW_HIDE if not windowed else win32con.SW_SHOWNORMAL,
         )

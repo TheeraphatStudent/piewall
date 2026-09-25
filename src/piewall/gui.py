@@ -2,7 +2,6 @@
 
 from __future__ import annotations
 
-import ctypes
 import tkinter as tk
 from pathlib import Path
 from tkinter import filedialog, messagebox, ttk
@@ -14,6 +13,7 @@ from .elevate import ElevationCancelled, is_admin, run_elevated
 from .listeners import current_listeners
 from .model import PIEWALL_GROUP, Rule, filter_rules, parse_profiles
 from .transfer import export_rules, import_rules
+from . import theme
 
 COLUMNS = [  # (id, heading, width, stretch)
     ("enabled", "On", 44, False),
@@ -25,9 +25,6 @@ COLUMNS = [  # (id, heading, width, stretch)
     ("name", "Name", 380, True),
     ("program", "Program", 200, False),
 ]
-BLOCK_BG = "#fdecec"
-DISABLED_FG = "#8a8f98"
-BANNER_BG = "#fff4ce"
 FILTER_ALL = "All"
 
 
@@ -51,7 +48,7 @@ def _sort_key(column: str):
 
 
 class OpenPortDialog(tk.Toplevel):
-    def __init__(self, master: tk.Misc) -> None:
+    def __init__(self, master: tk.Misc, muted: str) -> None:
         super().__init__(master)
         self.title("Open port")
         self.resizable(False, False)
@@ -86,7 +83,7 @@ class OpenPortDialog(tk.Toplevel):
 
         ttk.Label(body, text="Name").grid(row=4, column=0, sticky="w", pady=4)
         ttk.Entry(body, textvariable=self.name, width=34).grid(row=4, column=1, sticky="we", pady=4)
-        ttk.Label(body, text="Optional. Default: piewall TCP <port> in", foreground=DISABLED_FG
+        ttk.Label(body, text="Optional. Default: piewall TCP <port> in", foreground=muted
                   ).grid(row=5, column=1, sticky="w")
 
         buttons = ttk.Frame(body)
@@ -129,6 +126,7 @@ class App:
         self.conflicts: list[Conflict] = []
         self.by_iid: dict[str, Rule] = {}
         self.sort_column, self.sort_reverse = "name", False
+        self.pal = theme.palette_for(theme.system_mode())
 
         root.title("piewall" + ("  (Administrator)" if admin else ""))
         root.geometry("1180x680")
@@ -139,35 +137,55 @@ class App:
         self._banner()
         self._table()
         self._statusbar()
+        self._recolor()
         self.reload()
+        theme.watch_system_theme(root, self.set_mode)
+
+    def set_mode(self, mode: str) -> None:
+        self.pal = theme.apply_theme(self.root, mode)
+        self._style_fonts()
+        self._recolor()
+
+    def _recolor(self) -> None:
+        pal = self.pal
+        self.tree.tag_configure("block", background=pal.block_row)
+        self.tree.tag_configure("disabled", foreground=pal.disabled_fg)
+        self.banner.configure(bg=pal.banner_bg, fg=pal.banner_fg)
+        self.wordmark.configure(foreground=pal.text)
+        ttk.Style(self.root).configure("Status.TLabel", foreground=pal.muted)
+        entry, _ = self._search_hint
+        if getattr(entry, "_hint", False):
+            entry.configure(foreground=pal.muted)
 
     # ---------- layout ----------
     def _style(self) -> None:
+        self.pal = theme.apply_theme(self.root, self.pal.mode)
+        self._style_fonts()
+
+    def _style_fonts(self) -> None:
+        # Sun Valley ships Segoe UI Variable fonts; keep rows roomy (Fluent spacing).
         style = ttk.Style(self.root)
-        if "vista" in style.theme_names():
-            style.theme_use("vista")
         base = tkfont.nametofont("TkDefaultFont")
-        base.configure(family="Segoe UI", size=10)
-        tkfont.nametofont("TkTextFont").configure(family="Segoe UI", size=10)
-        tkfont.nametofont("TkHeadingFont").configure(family="Segoe UI", size=10, weight="bold")
-        style.configure("Treeview", rowheight=int(base.metrics("linespace") * 1.6),
-                        font=base)
-        style.configure("Treeview.Heading", font="TkHeadingFont")
-        style.configure("Status.TLabel", foreground="#555b66", padding=(12, 4))
+        style.configure("Treeview", rowheight=int(base.metrics("linespace") * 1.9))
+        style.configure("Status.TLabel", padding=(14, 6))
+        style.configure("Wordmark.TLabel", font=(base.actual("family"), 13, "bold"))
 
     def _menu(self) -> None:
-        bar = tk.Menu(self.root)
-        file = tk.Menu(bar, tearoff=False)
-        file.add_command(label="Export all rules…", command=lambda: self.export(False))
-        file.add_command(label="Export piewall rules…", command=lambda: self.export(True))
-        file.add_command(label="Import rules…", command=self.import_)
-        file.add_separator()
-        file.add_command(label="Refresh", accelerator="F5", command=self.reload)
-        file.add_separator()
-        file.add_command(label="Exit", command=self.root.destroy)
-        bar.add_cascade(label="File", menu=file)
-        self.root.config(menu=bar)
+        # Windows 11 style: no classic menu bar; secondary actions live under "⋯".
+        more = tk.Menu(self.root, tearoff=False)
+        more.add_command(label="Refresh", accelerator="F5", command=self.reload)
+        more.add_separator()
+        more.add_command(label="Export all rules…", command=lambda: self.export(False))
+        more.add_command(label="Export piewall rules…", command=lambda: self.export(True))
+        more.add_command(label="Import rules…", command=self.import_)
+        more.add_separator()
+        more.add_command(label="Exit", command=self.root.destroy)
+        self.more_menu = more
         self.root.bind("<F5>", lambda e: self.reload())
+
+    def _post_more(self, button: ttk.Button) -> None:
+        self.more_menu.tk_popup(button.winfo_rootx(),
+                                button.winfo_rooty() + button.winfo_height() + 2)
 
     def _toolbar(self) -> None:
         bar = ttk.Frame(self.root, padding=(12, 10, 12, 6))
@@ -179,10 +197,17 @@ class App:
         filters.pack(fill="x", pady=(8, 0))
 
         # Row 1: search on the left, actions on the right.
+        more = ttk.Button(top, text="⋯", width=3)
+        more.configure(command=lambda: self._post_more(more))
+        more.pack(side="right")
         if not self.admin:
-            ttk.Button(top, text="Run as admin", command=self.restart_as_admin).pack(side="right")
-        ttk.Button(top, text="Refresh", command=self.reload).pack(side="right", padx=(0, 8))
-        ttk.Button(top, text="Open port…", command=self.open_port).pack(side="right", padx=(0, 8))
+            ttk.Button(top, text="Run as admin", command=self.restart_as_admin
+                       ).pack(side="right", padx=(0, 8))
+        ttk.Button(top, text="Open port…", style="Accent.TButton", command=self.open_port).pack(side="right", padx=(0, 8))
+        self._mark = theme.wordmark_image(self.root)
+        self.wordmark = ttk.Label(top, text=" piewall", image=self._mark, compound="left",
+                                  style="Wordmark.TLabel")
+        self.wordmark.pack(side="left", padx=(0, 16))
         self.search = tk.StringVar()
         search = ttk.Entry(top, textvariable=self.search)
         search.pack(side="left", fill="x", expand=True, padx=(0, 16))
@@ -229,7 +254,7 @@ class App:
         def show(_=None):
             if not var.get():
                 entry._hint = True
-                entry.configure(foreground=DISABLED_FG)
+                entry.configure(foreground=self.pal.muted)
                 entry.insert(0, text)
 
         def hide(_=None):
@@ -244,7 +269,7 @@ class App:
         self._search_hint = (entry, text)
 
     def _banner(self) -> None:
-        self.banner = tk.Label(self.root, bg=BANNER_BG, fg="#5c4400", anchor="w",
+        self.banner = tk.Label(self.root, anchor="w",
                                padx=14, pady=6, cursor="hand2")
         self.banner.bind("<Button-1>", lambda e: self.show_conflicts())
 
@@ -257,8 +282,6 @@ class App:
             self.tree.heading(cid, text=heading, anchor="w",
                               command=lambda c=cid: self.sort_by(c))
             self.tree.column(cid, width=width, stretch=stretch, anchor="w")
-        self.tree.tag_configure("block", background=BLOCK_BG)
-        self.tree.tag_configure("disabled", foreground=DISABLED_FG)
         scroll = ttk.Scrollbar(frame, orient="vertical", command=self.tree.yview)
         self.tree.configure(yscrollcommand=scroll.set)
         self.tree.pack(side="left", fill="both", expand=True)
@@ -406,7 +429,7 @@ class App:
     def open_port(self) -> None:
         if not self._can_change():
             return
-        dialog = OpenPortDialog(self.root)
+        dialog = OpenPortDialog(self.root, self.pal.muted)
         self.root.wait_window(dialog)
         if dialog.result:
             rule = dialog.result
@@ -441,7 +464,8 @@ class App:
         if not rules:
             return
         r = rules[0]
-        lines = [("Name", r.title), *([("Internal name", r.name)] if r.display_name else []), ("Enabled", "Yes" if r.enabled else "No"),
+        lines = [("Name", r.title), *([("Internal name", r.name)] if r.display_name else []),
+                 ("Enabled", "Yes" if r.enabled else "No"),
                  ("Action", r.action.capitalize()), ("Direction", r.direction),
                  ("Protocol", r.protocol.upper()), ("Local ports", r.ports_label),
                  ("Remote addresses", r.remote_addresses), ("Program", r.program or "Any"),
@@ -460,7 +484,10 @@ class App:
         ttk.Label(body, text="Windows always lets Block win. These Block rules stop traffic "
                              "that an Allow rule is meant to let through:",
                   wraplength=780).pack(anchor="w", pady=(0, 8))
-        box = tk.Listbox(body, activestyle="none", selectmode="extended",
+        pal = self.pal
+        box = tk.Listbox(body, activestyle="none", selectmode="extended", borderwidth=0,
+                         highlightthickness=0, bg=pal.list_bg, fg=pal.list_fg,
+                         selectbackground=pal.list_select, selectforeground=pal.list_fg,
                          font=tkfont.nametofont("TkDefaultFont"))
         for c in self.conflicts:
             box.insert("end", c.describe())
@@ -485,20 +512,19 @@ class App:
         ttk.Button(buttons, text="Close", command=win.destroy).pack(side="right")
         ttk.Button(buttons, text="Disable blocking rule",
                    command=lambda: fix("disable")).pack(side="right", padx=(0, 8))
-        ttk.Button(buttons, text="Make blocking rule Allow",
+        ttk.Button(buttons, text="Make blocking rule Allow", style="Accent.TButton",
                    command=lambda: fix("allow")).pack(side="right", padx=(0, 8))
         ttk.Label(buttons, text="Applies to selected lines, or all if none selected.",
-                  foreground=DISABLED_FG).pack(side="left")
+                  foreground=pal.muted).pack(side="left")
 
 
 def main(backend_factory=None) -> None:
-    try:
-        ctypes.windll.shcore.SetProcessDpiAwareness(1)  # crisp text on scaled displays
-    except (AttributeError, OSError):
-        pass
+    theme.set_dpi_awareness()
+    theme.set_app_id()
     if backend_factory is None:
         from .backend import ComBackend as backend_factory
     root = tk.Tk()
+    theme.set_icon(root)
     App(root, backend_factory(), is_admin())
     root.mainloop()
 

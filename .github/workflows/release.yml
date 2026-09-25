@@ -1,0 +1,81 @@
+name: Release
+
+on:
+  push:
+    tags: ["v*"]
+
+permissions:
+  contents: read
+
+concurrency:
+  group: release-${{ github.ref }}
+  cancel-in-progress: false
+
+jobs:
+  release:
+    runs-on: windows-latest
+    timeout-minutes: 30
+    permissions:
+      contents: write  # create the GitHub Release and upload assets
+    defaults:
+      run:
+        shell: pwsh
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+
+      - uses: astral-sh/setup-uv@c18668ad3cf93ea998bef934396af7bb5c839dc7 # v10.2.0
+        with:
+          enable-cache: true
+
+      - name: Check tag matches pyproject version
+        id: version
+        env:
+          TAG: ${{ github.ref_name }}
+        run: |
+          $version = [regex]::Match((Get-Content -Raw pyproject.toml), '(?m)^version\s*=\s*"([^"]+)"').Groups[1].Value
+          if ("v$version" -ne $env:TAG) {
+            Write-Error "Tag $env:TAG does not match pyproject.toml version $version (expected v$version)"
+            exit 1
+          }
+          "version=$version" >> $env:GITHUB_OUTPUT
+
+      - name: Install dependencies
+        run: uv sync --locked
+
+      - name: Run tests
+        run: uv run pytest -q
+
+      - name: Install Inno Setup
+        run: |
+          $known = @("${env:ProgramFiles(x86)}\Inno Setup 6\ISCC.exe", "$env:ProgramFiles\Inno Setup 6\ISCC.exe")
+          if (-not (Get-Command iscc -ErrorAction SilentlyContinue) -and -not ($known | Where-Object { Test-Path $_ })) {
+            choco install innosetup -y --no-progress
+            if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+          }
+
+      - name: Build
+        run: ./packaging/build.ps1 -SkipTests
+
+      # Signing would go here (or inside build.ps1); see packaging/README.md.
+
+      - name: Create GitHub Release
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          TAG: ${{ github.ref_name }}
+          VERSION: ${{ steps.version.outputs.version }}
+        run: |
+          $flags = @()
+          if ($env:VERSION -match '[a-zA-Z-]') { $flags += '--prerelease' }  # e.g. 1.0.0rc1
+          gh release create $env:TAG `
+            dist/release/piewall.exe `
+            dist/release/piewall-cli.exe `
+            dist/release/piewall-setup.exe `
+            dist/release/SHA256SUMS.txt `
+            --repo $env:GITHUB_REPOSITORY `
+            --title "piewall $env:VERSION" `
+            --generate-notes `
+            --verify-tag `
+            @flags
+          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
