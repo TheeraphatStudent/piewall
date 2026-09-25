@@ -14,7 +14,6 @@ from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "tests"))
 
-from PIL import ImageGrab  # noqa: E402
 
 from fakes import FakeBackend  # noqa: E402
 from piewall import gui, theme  # noqa: E402
@@ -84,6 +83,7 @@ def main() -> None:
     app.tree.selection_set(app.tree.get_children()[3])
 
     def snap() -> None:
+        from PIL import ImageGrab
         root.lift()
         root.attributes("-topmost", True)
         root.update()
