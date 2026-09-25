@@ -3,6 +3,7 @@ name = "piewall"
 version = "0.1.0"
 description = "Manage Windows Firewall rules from a simple window or the command line"
 readme = "README.md"
+license = "MIT"
 authors = [
     { name = "theeraphat.ch", email = "theeraphatchueanokkhum@gmail.com" }
 ]
