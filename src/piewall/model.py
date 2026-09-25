@@ -87,7 +87,6 @@ class Rule:
     def to_dict(self) -> dict:
         d = asdict(self)
         d["profiles"] = sorted(self.profiles)
-        del d["display_name"]
         return d
 
     @classmethod

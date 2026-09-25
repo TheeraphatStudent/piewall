@@ -10,13 +10,15 @@ authors = [
 requires-python = ">=3.12"
 dependencies = [
     "darkdetect>=0.8.0",
+    "mcp>=2.2,<3",
     "psutil>=7.2.2",
-    "pywin32>=312",
+    "pywin32>=312; sys_platform == 'win32'",
     "sv-ttk>=2.6.1",
 ]
 
 [project.scripts]
 piewall = "piewall.cli:main"
+piewall-mcp = "piewall.mcp_server:main"
 
 [project.gui-scripts]
 piewall-gui = "piewall.gui:main"

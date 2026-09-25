@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import argparse
 import contextlib
+import io
 import os
 import sys
 import tempfile
@@ -160,7 +161,8 @@ def run_command(args: argparse.Namespace, backend: Backend) -> int:
         return EXIT_FAIL
 
     if cmd == "export":
-        n = export_rules(backend.list_rules(), args.file, piewall_only=args.piewall_only)
+        n = export_rules(backend.list_rules(), args.file, piewall_only=args.piewall_only,
+                         listeners=current_listeners())
         print(f"Exported {n} rule(s) to {args.file}.")
         return EXIT_OK
     if cmd == "import":
@@ -223,6 +225,18 @@ def main(argv: list[str] | None = None, *, backend_factory=None, admin_check=is_
         except (FirewallError, OSError, ValueError) as exc:
             print(f"Error: {exc}", file=sys.stderr)
             return EXIT_FAIL
+
+
+def execute(argv: list[str], **kwargs) -> tuple[int, str]:
+    """Run a CLI command and return (exit code, combined output) instead of printing.
+
+    For callers that own stdout, e.g. the MCP server on stdio. Changes still go
+    through the UAC relaunch when not elevated.
+    """
+    buf = io.StringIO()
+    with contextlib.redirect_stdout(buf), contextlib.redirect_stderr(buf):
+        code = main(argv, **kwargs)
+    return code, buf.getvalue()
 
 
 if __name__ == "__main__":

@@ -441,7 +441,8 @@ class App:
             parent=self.root, defaultextension=".json", filetypes=[("JSON", "*.json")],
             initialfile="piewall-rules.json" if piewall_only else "firewall-rules.json")
         if path:
-            n = export_rules(self.rules, Path(path), piewall_only=piewall_only)
+            n = export_rules(self.rules, Path(path), piewall_only=piewall_only,
+                             listeners=current_listeners())
             messagebox.showinfo("Export", f"Exported {n} rule(s).", parent=self.root)
 
     def import_(self) -> None:

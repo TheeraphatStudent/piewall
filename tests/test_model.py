@@ -76,7 +76,7 @@ def test_display_name_is_cosmetic():
     a = rule(name=raw, display_name="Microsoft Store")
     assert a.title == "Microsoft Store"
     assert a == rule(name=raw)  # equality ignores it (import dedup, name-based ops)
-    assert "display_name" not in a.to_dict()
+    assert Rule.from_dict(a.to_dict()).display_name == "Microsoft Store"
     assert filter_rules([a], search="store") == [a]
 
 

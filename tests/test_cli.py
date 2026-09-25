@@ -150,3 +150,30 @@ def test_reads_never_elevate(backend):
         raise AssertionError("should not elevate")
 
     assert run(backend, "list", admin=False, elevator=elevator) == 0
+
+
+def test_execute_captures_output_instead_of_printing(backend, capsys):
+    code, text = cli.execute(["disable", "web"], backend_factory=lambda: backend,
+                             admin_check=lambda: True)
+    assert code == 0 and "Disabled 1 rule(s) named 'web'" in text
+    assert capsys.readouterr().out == ""
+
+
+def test_execute_relays_elevated_output(backend, capsys):
+    def elevator(module_args, *, wait):
+        out_file = module_args[module_args.index("--elevated-output") + 1]
+        with open(out_file, "w", encoding="utf-8") as f:
+            f.write("Deleted 1 rule(s) named 'web'.\n")
+        return 0
+
+    code, text = cli.execute(["delete", "web"], backend_factory=lambda: backend,
+                             admin_check=lambda: False, elevator=elevator)
+    assert (code, text) == (0, "Deleted 1 rule(s) named 'web'.\n")
+    assert capsys.readouterr().out == ""
+
+
+def test_export_includes_listeners(backend, tmp_path, monkeypatch):
+    monkeypatch.setattr(cli, "current_listeners", lambda: [("x.exe", "tcp", 1)])
+    path = tmp_path / "r.json"
+    run(backend, "export", str(path))
+    assert json.loads(path.read_text())["listeners"] == [["x.exe", "tcp", 1]]
