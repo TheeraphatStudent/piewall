@@ -1,4 +1,4 @@
-# pywall — design
+# piewall — design
 
 Date: 2026-09-25
 
@@ -15,8 +15,8 @@ and from a CLI. Motivating case: a dismissed firewall popup silently created
   were rejected (per-rule filter lookups take tens of seconds); `netsh` text
   parsing was rejected (fragile, localized).
 - **UI:** Tkinter/ttk desktop window (stdlib, no server to secure).
-- **Scope:** all rules on the machine, not only pywall-created ones. Rules that
-  pywall creates get the group `pywall`; `close` only ever removes those.
+- **Scope:** all rules on the machine, not only piewall-created ones. Rules that
+  piewall creates get the group `piewall`; `close` only ever removes those.
 - **Elevation:** reads work unelevated. Mutations relaunch through UAC
   (`ShellExecuteEx` verb `runas`). The CLI waits for the elevated child and
   prints its captured output; the GUI restarts itself as admin.
@@ -36,15 +36,15 @@ and from a CLI. Motivating case: a dismissed firewall popup silently created
 ## CLI
 
 ```
-pywall list [--search S] [--port N] [--action allow|block] [--dir in|out] [--enabled|--disabled]
-pywall open PORT [--udp|--any-protocol] [--dir in|out] [--profile any|domain|private|public ...] [--name N]
-pywall close PORT
-pywall enable|disable|delete NAME
-pywall allow|block NAME
-pywall conflicts
-pywall export FILE [--pywall-only]
-pywall import FILE
-pywall gui
+piewall list [--search S] [--port N] [--action allow|block] [--dir in|out] [--enabled|--disabled]
+piewall open PORT [--udp|--any-protocol] [--dir in|out] [--profile any|domain|private|public ...] [--name N]
+piewall close PORT
+piewall enable|disable|delete NAME
+piewall allow|block NAME
+piewall conflicts
+piewall export FILE [--piewall-only]
+piewall import FILE
+piewall gui
 ```
 
 NAME matches every rule with that exact name (Windows allows duplicates, as

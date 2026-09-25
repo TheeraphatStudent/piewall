@@ -7,13 +7,13 @@ from pathlib import Path
 from typing import Iterable
 
 from .backend import Backend
-from .model import PYWALL_GROUP, Rule
+from .model import PIEWALL_GROUP, Rule
 
 FORMAT_VERSION = 1
 
 
-def export_rules(rules: Iterable[Rule], path: Path, *, pywall_only: bool = False) -> int:
-    rules = [r for r in rules if not pywall_only or r.group == PYWALL_GROUP]
+def export_rules(rules: Iterable[Rule], path: Path, *, piewall_only: bool = False) -> int:
+    rules = [r for r in rules if not piewall_only or r.group == PIEWALL_GROUP]
     payload = {"version": FORMAT_VERSION, "rules": [r.to_dict() for r in rules]}
     Path(path).write_text(json.dumps(payload, indent=2), encoding="utf-8")
     return len(rules)

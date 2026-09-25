@@ -1,4 +1,4 @@
-"""pywall desktop window (Tkinter/ttk)."""
+"""piewall desktop window (Tkinter/ttk)."""
 
 from __future__ import annotations
 
@@ -12,7 +12,7 @@ from .backend import Backend, FirewallError
 from .conflicts import Conflict, find_conflicts
 from .elevate import ElevationCancelled, is_admin, run_elevated
 from .listeners import current_listeners
-from .model import PYWALL_GROUP, Rule, filter_rules, parse_profiles
+from .model import PIEWALL_GROUP, Rule, filter_rules, parse_profiles
 from .transfer import export_rules, import_rules
 
 COLUMNS = [  # (id, heading, width, stretch)
@@ -86,7 +86,7 @@ class OpenPortDialog(tk.Toplevel):
 
         ttk.Label(body, text="Name").grid(row=4, column=0, sticky="w", pady=4)
         ttk.Entry(body, textvariable=self.name, width=34).grid(row=4, column=1, sticky="we", pady=4)
-        ttk.Label(body, text="Optional. Default: pywall TCP <port> in", foreground=DISABLED_FG
+        ttk.Label(body, text="Optional. Default: piewall TCP <port> in", foreground=DISABLED_FG
                   ).grid(row=5, column=1, sticky="w")
 
         buttons = ttk.Frame(body)
@@ -112,10 +112,10 @@ class OpenPortDialog(tk.Toplevel):
         protocol = self.protocol.get().lower()
         direction = "in" if self.direction.get() == "Inbound" else "out"
         self.result = Rule(
-            name=self.name.get().strip() or f"pywall {protocol.upper()} {text} {direction}",
+            name=self.name.get().strip() or f"piewall {protocol.upper()} {text} {direction}",
             enabled=True, direction=direction, action="allow", protocol=protocol,
-            local_ports=text, profiles=parse_profiles(chosen), group=PYWALL_GROUP,
-            description="Created by pywall",
+            local_ports=text, profiles=parse_profiles(chosen), group=PIEWALL_GROUP,
+            description="Created by piewall",
         )
         self.destroy()
 
@@ -130,7 +130,7 @@ class App:
         self.by_iid: dict[str, Rule] = {}
         self.sort_column, self.sort_reverse = "name", False
 
-        root.title("pywall" + ("  (Administrator)" if admin else ""))
+        root.title("piewall" + ("  (Administrator)" if admin else ""))
         root.geometry("1180x680")
         root.minsize(760, 420)
         self._style()
@@ -159,7 +159,7 @@ class App:
         bar = tk.Menu(self.root)
         file = tk.Menu(bar, tearoff=False)
         file.add_command(label="Export all rules…", command=lambda: self.export(False))
-        file.add_command(label="Export pywall rules…", command=lambda: self.export(True))
+        file.add_command(label="Export piewall rules…", command=lambda: self.export(True))
         file.add_command(label="Import rules…", command=self.import_)
         file.add_separator()
         file.add_command(label="Refresh", accelerator="F5", command=self.reload)
@@ -288,7 +288,7 @@ class App:
             self.rules = self.backend.list_rules()
             self.conflicts = find_conflicts(self.rules, current_listeners())
         except Exception as exc:
-            messagebox.showerror("pywall", f"Could not read firewall rules:\n{exc}")
+            messagebox.showerror("piewall", f"Could not read firewall rules:\n{exc}")
             self.rules, self.conflicts = [], []
         finally:
             self.root.configure(cursor="")
@@ -364,13 +364,13 @@ class App:
         if messagebox.askyesno(
                 "Administrator rights needed",
                 "Changing firewall rules needs administrator rights.\n\n"
-                "Restart pywall as administrator?", parent=self.root):
+                "Restart piewall as administrator?", parent=self.root):
             self.restart_as_admin()
         return False
 
     def restart_as_admin(self) -> None:
         try:
-            run_elevated(["pywall.gui"], wait=False, windowed=True)
+            run_elevated(["piewall.gui"], wait=False, windowed=True)
         except ElevationCancelled:
             return
         self.root.destroy()
@@ -379,7 +379,7 @@ class App:
         try:
             work()
         except FirewallError as exc:
-            messagebox.showerror("pywall", str(exc), parent=self.root)
+            messagebox.showerror("piewall", str(exc), parent=self.root)
         self.reload()
 
     def set_enabled(self, on: bool) -> None:
@@ -413,12 +413,12 @@ class App:
             self._apply(lambda: self.backend.add_rule(rule))
             self.port.set(rule.local_ports)  # show the new rule
 
-    def export(self, pywall_only: bool) -> None:
+    def export(self, piewall_only: bool) -> None:
         path = filedialog.asksaveasfilename(
             parent=self.root, defaultextension=".json", filetypes=[("JSON", "*.json")],
-            initialfile="pywall-rules.json" if pywall_only else "firewall-rules.json")
+            initialfile="piewall-rules.json" if piewall_only else "firewall-rules.json")
         if path:
-            n = export_rules(self.rules, Path(path), pywall_only=pywall_only)
+            n = export_rules(self.rules, Path(path), piewall_only=piewall_only)
             messagebox.showinfo("Export", f"Exported {n} rule(s).", parent=self.root)
 
     def import_(self) -> None:

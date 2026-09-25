@@ -1,4 +1,4 @@
-"""pywall command line."""
+"""piewall command line."""
 
 from __future__ import annotations
 
@@ -14,7 +14,7 @@ from .backend import Backend, FirewallError
 from .conflicts import find_conflicts
 from .elevate import ElevationCancelled, is_admin, run_elevated
 from .listeners import current_listeners
-from .model import PYWALL_GROUP, Rule, filter_rules, is_any, parse_profiles, port_in
+from .model import PIEWALL_GROUP, Rule, filter_rules, is_any, parse_profiles, port_in
 from .transfer import export_rules, import_rules
 
 MUTATING = {"open", "close", "enable", "disable", "delete", "allow", "block", "import"}
@@ -29,7 +29,7 @@ def _port(value: str) -> int:
 
 
 def build_parser() -> argparse.ArgumentParser:
-    p = argparse.ArgumentParser(prog="pywall", description="Manage Windows Firewall rules.")
+    p = argparse.ArgumentParser(prog="piewall", description="Manage Windows Firewall rules.")
     p.add_argument("--elevated-output", help=argparse.SUPPRESS)
     sub = p.add_subparsers(dest="command", required=True, metavar="COMMAND")
 
@@ -44,7 +44,7 @@ def build_parser() -> argparse.ArgumentParser:
     state.add_argument("--enabled", action="store_const", const=True, dest="enabled")
     state.add_argument("--disabled", action="store_const", const=False, dest="enabled")
 
-    op = sub.add_parser("open", help="allow a port (creates a rule in the 'pywall' group)")
+    op = sub.add_parser("open", help="allow a port (creates a rule in the 'piewall' group)")
     op.add_argument("port", type=_port)
     proto = op.add_mutually_exclusive_group()
     proto.add_argument("--udp", action="store_const", const="udp", dest="protocol")
@@ -52,9 +52,9 @@ def build_parser() -> argparse.ArgumentParser:
     op.add_argument("--dir", choices=["in", "out"], default="in", dest="direction")
     op.add_argument("--profile", nargs="+", default=["any"],
                     choices=["any", "domain", "private", "public"])
-    op.add_argument("--name", help="rule name (default: 'pywall TCP <port> in')")
+    op.add_argument("--name", help="rule name (default: 'piewall TCP <port> in')")
 
-    cl = sub.add_parser("close", help="delete the pywall rules that opened a port")
+    cl = sub.add_parser("close", help="delete the piewall rules that opened a port")
     cl.add_argument("port", type=_port)
 
     for name, text in [("enable", "enable rules by name"), ("disable", "disable rules by name"),
@@ -66,7 +66,7 @@ def build_parser() -> argparse.ArgumentParser:
 
     ex = sub.add_parser("export", help="save rules to a JSON file")
     ex.add_argument("file", type=Path)
-    ex.add_argument("--pywall-only", action="store_true", help="only rules pywall created")
+    ex.add_argument("--piewall-only", action="store_true", help="only rules piewall created")
 
     im = sub.add_parser("import", help="add rules from a JSON file (skips identical ones)")
     im.add_argument("file", type=Path)
@@ -94,7 +94,7 @@ def print_table(rules: list[Rule], total: int) -> None:
 def _by_name(backend: Backend, name: str, op: Callable[[], int], done: str) -> int:
     count = op()
     if count == 0:
-        print(f"No rule named '{name}'. Try: pywall list --search \"{name}\"", file=sys.stderr)
+        print(f"No rule named '{name}'. Try: piewall list --search \"{name}\"", file=sys.stderr)
         return EXIT_FAIL
     print(f"{done} {count} rule(s) named '{name}'.")
     return EXIT_OK
@@ -113,10 +113,10 @@ def run_command(args: argparse.Namespace, backend: Backend) -> int:
     if cmd == "open":
         protocol = args.protocol or "tcp"
         rule = Rule(
-            name=args.name or f"pywall {protocol.upper()} {args.port} {args.direction}",
+            name=args.name or f"piewall {protocol.upper()} {args.port} {args.direction}",
             enabled=True, direction=args.direction, action="allow", protocol=protocol,
             local_ports=str(args.port), profiles=parse_profiles(args.profile),
-            group=PYWALL_GROUP, description="Created by pywall",
+            group=PIEWALL_GROUP, description="Created by piewall",
         )
         backend.add_rule(rule)
         print(f"Opened port {args.port} ({protocol}, {args.direction}, {rule.profiles_label}) "
@@ -125,11 +125,11 @@ def run_command(args: argparse.Namespace, backend: Backend) -> int:
 
     if cmd == "close":
         names = sorted({r.name for r in backend.list_rules()
-                        if r.group == PYWALL_GROUP and not is_any(r.local_ports)
+                        if r.group == PIEWALL_GROUP and not is_any(r.local_ports)
                         and port_in(args.port, r.local_ports)})
         if not names:
-            print(f"No pywall rules open port {args.port}. (Rules made elsewhere are never "
-                  f"touched by close; use 'pywall list --port {args.port}'.)", file=sys.stderr)
+            print(f"No piewall rules open port {args.port}. (Rules made elsewhere are never "
+                  f"touched by close; use 'piewall list --port {args.port}'.)", file=sys.stderr)
             return EXIT_FAIL
         for name in names:
             backend.delete_rules(name)
@@ -156,11 +156,11 @@ def run_command(args: argparse.Namespace, backend: Backend) -> int:
         blockers = sorted({c.blocker.name for c in conflicts})
         print(f"\n{len(conflicts)} conflict(s). To fix, flip or remove the blocking rule:")
         for name in blockers:
-            print(f'  pywall allow "{name}"    or    pywall delete "{name}"')
+            print(f'  piewall allow "{name}"    or    piewall delete "{name}"')
         return EXIT_FAIL
 
     if cmd == "export":
-        n = export_rules(backend.list_rules(), args.file, pywall_only=args.pywall_only)
+        n = export_rules(backend.list_rules(), args.file, piewall_only=args.piewall_only)
         print(f"Exported {n} rule(s) to {args.file}.")
         return EXIT_OK
     if cmd == "import":
@@ -172,11 +172,11 @@ def run_command(args: argparse.Namespace, backend: Backend) -> int:
 
 
 def _relaunch_elevated(argv: list[str], elevator) -> int:
-    fd, out_file = tempfile.mkstemp(prefix="pywall-", suffix=".txt")
+    fd, out_file = tempfile.mkstemp(prefix="piewall-", suffix=".txt")
     os.close(fd)
     try:
         try:
-            code = elevator(["pywall", "--elevated-output", out_file, *argv], wait=True)
+            code = elevator(["piewall", "--elevated-output", out_file, *argv], wait=True)
         except ElevationCancelled:
             print("UAC prompt cancelled; nothing changed.", file=sys.stderr)
             return EXIT_CANCELLED

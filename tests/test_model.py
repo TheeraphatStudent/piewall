@@ -1,4 +1,4 @@
-from pywall.model import (
+from piewall.model import (
     package_label,
     PROFILE_ALL,
     Rule,
@@ -41,7 +41,7 @@ def test_parse_profiles():
 
 
 def test_rule_dict_roundtrip():
-    r = rule(program=r"C:\a.exe", profiles=frozenset({"public"}), group="pywall")
+    r = rule(program=r"C:\a.exe", profiles=frozenset({"public"}), group="piewall")
     assert Rule.from_dict(r.to_dict()) == r
 
 

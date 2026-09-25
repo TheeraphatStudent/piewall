@@ -5,7 +5,7 @@ from __future__ import annotations
 from dataclasses import asdict, dataclass, field
 from typing import Iterable
 
-PYWALL_GROUP = "pywall"
+PIEWALL_GROUP = "piewall"
 
 # NET_FW_PROFILE2_* bit flags; "all" is the value Windows stores for "Any".
 PROFILE_BITS = {"domain": 1, "private": 2, "public": 4}

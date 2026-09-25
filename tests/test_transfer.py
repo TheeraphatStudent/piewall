@@ -1,12 +1,12 @@
 import json
 
-from pywall.model import PYWALL_GROUP, Rule
-from pywall.transfer import export_rules, import_rules
+from piewall.model import PIEWALL_GROUP, Rule
+from piewall.transfer import export_rules, import_rules
 
 from fakes import FakeBackend
 
 A = Rule(name="a", enabled=True, direction="in", action="allow", protocol="tcp",
-         local_ports="8080", group=PYWALL_GROUP)
+         local_ports="8080", group=PIEWALL_GROUP)
 B = Rule(name="b", enabled=False, direction="out", action="block", program=r"C:\x.exe")
 
 
@@ -18,9 +18,9 @@ def test_export_writes_versioned_json(tmp_path):
     assert [Rule.from_dict(d) for d in data["rules"]] == [A, B]
 
 
-def test_export_pywall_only(tmp_path):
+def test_export_piewall_only(tmp_path):
     path = tmp_path / "rules.json"
-    assert export_rules([A, B], path, pywall_only=True) == 1
+    assert export_rules([A, B], path, piewall_only=True) == 1
 
 
 def test_import_adds_missing_and_skips_identical(tmp_path):

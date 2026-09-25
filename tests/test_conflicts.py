@@ -1,5 +1,5 @@
-from pywall.conflicts import find_conflicts, ports_overlap
-from pywall.model import Rule
+from piewall.conflicts import find_conflicts, ports_overlap
+from piewall.model import Rule
 
 ALL = frozenset({"domain", "private", "public"})
 

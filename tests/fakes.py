@@ -1,4 +1,4 @@
-from pywall.model import Rule
+from piewall.model import Rule
 
 
 class FakeBackend:

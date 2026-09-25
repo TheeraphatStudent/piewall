@@ -2,8 +2,8 @@ import tkinter as tk
 
 import pytest
 
-from pywall import gui
-from pywall.model import Rule
+from piewall import gui
+from piewall.model import Rule
 
 from fakes import FakeBackend
 

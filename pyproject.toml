@@ -1,5 +1,5 @@
 [project]
-name = "pywall"
+name = "piewall"
 version = "0.1.0"
 description = "Manage Windows Firewall rules from a simple window or the command line"
 readme = "README.md"
@@ -13,10 +13,10 @@ dependencies = [
 ]
 
 [project.scripts]
-pywall = "pywall.cli:main"
+piewall = "piewall.cli:main"
 
 [project.gui-scripts]
-pywall-gui = "pywall.gui:main"
+piewall-gui = "piewall.gui:main"
 
 [build-system]
 requires = ["uv_build>=0.11.8,<0.12.0"]
