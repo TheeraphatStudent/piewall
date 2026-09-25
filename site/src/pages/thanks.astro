@@ -1,0 +1,34 @@
+---
+import Base from "../layouts/Base.astro";
+import Nav from "../components/Nav.astro";
+import Footer from "../components/Footer.astro";
+import Mark from "../components/Mark.astro";
+import GitHubIcon from "../components/GitHubIcon.astro";
+import { GITHUB_URL } from "../config";
+---
+<Base
+  title="Thank you · piewall"
+  description="Thank you for supporting piewall."
+  path="/thanks"
+  noindex
+>
+  <Nav links={false} />
+  <main id="main" class="flex flex-1 items-center py-24 md:py-32">
+    <div class="wrap mx-auto max-w-[40rem] text-center">
+      <Mark id="thanks" size={88} class="mx-auto" />
+      <h1 class="display-2 mt-8"><span class="block">Thank you.</span> <span class="block">That coffee means a lot.</span></h1>
+      <p class="lede mt-5">
+        Your support keeps piewall free and moving forward, macOS version included. A receipt from Stripe is on its way to your inbox.
+      </p>
+      <div class="mt-9 flex flex-col items-center justify-center gap-3 sm:flex-row">
+        <a href="/" class="btn btn-primary w-full max-w-72 sm:w-auto">Back to piewall</a>
+        <a href={GITHUB_URL} class="btn btn-secondary w-full max-w-72 sm:w-auto">
+          <GitHubIcon size={18} />
+          Star on GitHub
+        </a>
+      </div>
+      <p class="mt-6 text-[0.8125rem] text-label-2">Found a bug or have an idea? <a class="link" href={`${GITHUB_URL}/issues`}>Open an issue</a>.</p>
+    </div>
+  </main>
+  <Footer />
+</Base>

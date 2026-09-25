@@ -1,0 +1,14 @@
+{
+  "$schema": "./node_modules/wrangler/config-schema.json",
+  // Static-assets-only Worker: no script, so requests are served from the
+  // asset store and stay on the free tier.
+  "name": "piewall-site",
+  "compatibility_date": "2026-09-01",
+  "assets": {
+    "directory": "./dist",
+    "not_found_handling": "404-page"
+  },
+  "routes": [
+    { "pattern": "piewall.th33raphat.dev", "custom_domain": true }
+  ]
+}

@@ -1,0 +1,12 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" role="img" aria-label="piewall">
+  <!-- A pie built like a brick wall, with one slice lifted out: the opening you chose. -->
+  <defs>
+    <clipPath id="pie"><path d="M256 256 L429.2 156 A200 200 0 1 1 256 56 Z"/></clipPath>
+  </defs>
+    <path d="M256 256 L429.2 156 A200 200 0 1 1 256 56 Z" fill="#F27B1F"/>
+    <g clip-path="url(#pie)" stroke="#C4520D" stroke-width="10" stroke-linecap="round" fill="none" opacity="0.55">
+      <path d="M40 186 H472 M40 256 H472 M40 326 H472 M40 396 H472"/>
+      <path d="M180 116 V186 M330 186 V256 M150 256 V326 M300 326 V396 M200 396 V466 M390 256 V326 M90 186 V256"/>
+    </g>
+    <path d="M270 231.75 L270 31.75 A200 200 0 0 1 443.2 131.75 Z" fill="#FFC285"/>
+</svg>

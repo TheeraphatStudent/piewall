@@ -1,0 +1,32 @@
+---
+import Mark from "./Mark.astro";
+import { INSTALLER_URL } from "../config";
+interface Props { links?: boolean }
+const { links = true } = Astro.props;
+const items = [
+  ["Features", "/#features"],
+  ["How it works", "/#slice"],
+  ["Command line", "/#cli"],
+  ["Support", "/#coffee"],
+];
+---
+<header class="sticky top-0 z-50 border-b border-hairline bg-nav backdrop-blur-xl backdrop-saturate-180 pt-[env(safe-area-inset-top)]">
+  <nav class="wrap flex h-13 items-center justify-between gap-4" aria-label="Main">
+    <a href="/" class="flex min-h-11 items-center gap-2 rounded-lg" aria-label="piewall home">
+      <Mark id="nav" size={24} />
+      <span class="font-display text-[1.1875rem] font-semibold tracking-[-0.02em]">piewall</span>
+    </a>
+    <div class="flex items-center gap-1">
+      {links && (
+        <ul class="mr-3 hidden items-center gap-1 md:flex">
+          {items.map(([label, href]) => (
+            <li><a href={href} class="flex min-h-11 items-center px-3 text-[0.875rem] text-label-2 transition-colors hover:text-label">{label}</a></li>
+          ))}
+        </ul>
+      )}
+      <a href={INSTALLER_URL} class="group flex min-h-11 items-center" aria-label="Download piewall for Windows">
+        <span class="rounded-full bg-accent px-3.5 py-1.5 text-[0.875rem] font-medium text-on-accent transition-colors group-hover:bg-accent-hover">Download</span>
+      </a>
+    </div>
+  </nav>
+</header>

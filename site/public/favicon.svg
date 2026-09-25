@@ -1,0 +1,18 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" role="img" aria-label="piewall">
+  <defs>
+    <linearGradient id="bg" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#2C2C2E"/>
+      <stop offset="1" stop-color="#1C1C1E"/>
+    </linearGradient>
+    <clipPath id="pie"><path d="M256 256 L429.2 156 A200 200 0 1 1 256 56 Z"/></clipPath>
+  </defs>
+  <rect x="16" y="16" width="480" height="480" rx="108" fill="url(#bg)"/>
+  <g transform="translate(256 262) scale(0.7) translate(-256 -256)">
+    <path d="M256 256 L429.2 156 A200 200 0 1 1 256 56 Z" fill="#F27B1F"/>
+    <g clip-path="url(#pie)" stroke="#C4520D" stroke-width="10" stroke-linecap="round" fill="none" opacity="0.55">
+      <path d="M40 186 H472 M40 256 H472 M40 326 H472 M40 396 H472"/>
+      <path d="M180 116 V186 M330 186 V256 M150 256 V326 M300 326 V396 M200 396 V466 M390 256 V326 M90 186 V256"/>
+    </g>
+    <path d="M270 231.75 L270 31.75 A200 200 0 0 1 443.2 131.75 Z" fill="#FFC285"/>
+  </g>
+</svg>

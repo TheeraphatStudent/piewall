@@ -1,0 +1,77 @@
+---
+// "The slice you opened": the brand mark taken apart to explain Block-beats-Allow.
+// Whole pie = your firewall. Lifted slice = the Allow rule you opened.
+// Red plate in the gap = a Block rule that Windows lets win.
+const PIE = "M256 256 L429.2 156 A200 200 0 1 1 256 56 Z";
+const WEDGE = "M256 256 L256 56 A200 200 0 0 1 429.2 156 Z";
+---
+<figure class="slice-fig mx-auto w-full max-w-[460px]">
+  <svg
+    viewBox="30 -90 500 580"
+    class="h-auto w-full overflow-visible"
+    role="img"
+    aria-labelledby="slice-title slice-desc"
+  >
+    <title id="slice-title">A firewall drawn as a pie</title>
+    <desc id="slice-desc">An orange brick-patterned pie with one slice lifted out and labeled Allow 8080. A red plate labeled Block sits in the gap the slice left, so the slice cannot drop back into place.</desc>
+    <defs>
+      <clipPath id="story-pie"><path d={PIE} /></clipPath>
+      <clipPath id="story-wedge"><path d={WEDGE} /></clipPath>
+    </defs>
+
+    <!-- the gap where the slice belongs -->
+    <path d={WEDGE} class="slice-gap" fill="none" stroke-width="3" stroke-dasharray="10 9" stroke-linejoin="round" />
+
+    <!-- the whole pie: your firewall -->
+    <path d={PIE} fill="#F27B1F" />
+    <g clip-path="url(#story-pie)" stroke="#C4520D" stroke-width="10" stroke-linecap="round" fill="none" opacity="0.55">
+      <path d="M40 186 H472 M40 256 H472 M40 326 H472 M40 396 H472" />
+      <path d="M180 116 V186 M330 186 V256 M150 256 V326 M300 326 V396 M200 396 V466 M390 256 V326 M90 186 V256" />
+    </g>
+
+    <!-- the lifted slice: the port you opened -->
+    <g class="slice-lift">
+      <path d={WEDGE} fill="#FFC285" />
+      <text x="330" y="118" text-anchor="middle" font-family="inherit" font-size="30" font-weight="600" fill="#1D1D1F" letter-spacing="-0.5">8080</text>
+    </g>
+
+    <!-- the Block rule wedged in the gap -->
+    <g class="slice-block">
+      <g transform="rotate(30 303 174)">
+        <rect x="237" y="150" width="132" height="48" rx="12" fill="#D70015" />
+        <circle cx="265" cy="174" r="11" fill="none" stroke="#FFFFFF" stroke-width="4" />
+        <path d="M258 174 H272" stroke="#FFFFFF" stroke-width="4" stroke-linecap="round" />
+        <text x="285" y="184" font-family="inherit" font-size="27" font-weight="600" fill="#FFFFFF">Block</text>
+      </g>
+    </g>
+  </svg>
+</figure>
+
+<style>
+  .slice-fig { font-family: var(--font-display); }
+  .slice-gap { stroke: var(--pw-label-2); opacity: 0.55; }
+  .slice-lift { transform: translate(64px, -110px); }
+
+  @supports (animation-timeline: view()) {
+    @media (prefers-reduced-motion: no-preference) {
+      .slice-lift {
+        animation: lift linear both;
+        animation-timeline: view();
+        animation-range: entry 10% cover 45%;
+      }
+      .slice-block {
+        animation: drop linear both;
+        animation-timeline: view();
+        animation-range: cover 30% cover 50%;
+      }
+    }
+  }
+  @keyframes lift {
+    from { transform: translate(0, 0); }
+    to { transform: translate(64px, -110px); }
+  }
+  @keyframes drop {
+    from { opacity: 0; }
+    to { opacity: 1; }
+  }
+</style>

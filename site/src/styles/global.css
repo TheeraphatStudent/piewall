@@ -1,0 +1,232 @@
+@import "tailwindcss";
+
+/* ---------------------------------------------------------------
+   piewall brand tokens (brand/tokens.json)
+   Raw palette lives in @theme; semantic roles flip with the system
+   appearance via CSS variables below. No app-specific theme switch.
+---------------------------------------------------------------- */
+@theme {
+  --color-crust: #f27b1f;
+  --color-filling: #ffc285;
+  --color-ember: #c2410c;
+  --color-ember-dark: #ff9f52;
+  --color-ink: #1d1d1f;
+  --color-graphite: #6e6e73;
+  --color-paper: #fbfbfd;
+  --color-cloud: #f5f5f7;
+  --color-night: #000000;
+  --color-slate: #1c1c1e;
+  --color-mist: #a1a1a6;
+  --color-allow: #248a3d;
+  --color-block: #d70015;
+
+  --font-sans: -apple-system, BlinkMacSystemFont, "SF Pro Text", "Segoe UI Variable Text", "Segoe UI", system-ui, sans-serif;
+  --font-display: -apple-system, BlinkMacSystemFont, "SF Pro Display", "Segoe UI Variable Display", "Segoe UI", system-ui, sans-serif;
+  --font-mono: ui-monospace, "SF Mono", "Cascadia Code", "Cascadia Mono", Consolas, monospace;
+
+  --radius-control: 10px;
+  --radius-card: 18px;
+}
+
+/* Semantic roles, usable as bg-canvas, text-label, etc. */
+@theme inline {
+  --color-canvas: var(--pw-canvas);
+  --color-surface: var(--pw-surface);
+  --color-card: var(--pw-card);
+  --color-label: var(--pw-label);
+  --color-label-2: var(--pw-label-2);
+  --color-hairline: var(--pw-hairline);
+  --color-accent: var(--pw-accent);
+  --color-on-accent: var(--pw-on-accent);
+  --color-accent-hover: var(--pw-accent-hover);
+  --color-link: var(--pw-link);
+  --color-state-allow: var(--pw-allow);
+  --color-state-block: var(--pw-block);
+  --color-nav: var(--pw-nav);
+}
+
+:root {
+  color-scheme: light dark;
+  --pw-canvas: #fbfbfd;       /* paper */
+  --pw-surface: #f5f5f7;      /* cloud */
+  --pw-card: #ffffff;
+  --pw-label: #1d1d1f;        /* ink */
+  --pw-label-2: #6e6e73;      /* graphite */
+  --pw-hairline: rgb(0 0 0 / 0.1);
+  --pw-accent: #c2410c;       /* ember: white text 5.18:1 */
+  --pw-on-accent: #ffffff;
+  --pw-accent-hover: #a8380a;
+  --pw-link: #c2410c;
+  --pw-allow: #248a3d;
+  --pw-block: #d70015;
+  --pw-nav: rgb(251 251 253 / 0.72);
+  --pw-shot-shadow: 0 2px 4px rgb(0 0 0 / 0.04), 0 24px 64px -16px rgb(29 29 31 / 0.28);
+}
+
+@media (prefers-color-scheme: dark) {
+  :root {
+    --pw-canvas: #000000;     /* night */
+    --pw-surface: #161617;
+    --pw-card: #1c1c1e;       /* slate */
+    --pw-label: #f5f5f7;
+    --pw-label-2: #a1a1a6;    /* mist */
+    --pw-hairline: rgb(255 255 255 / 0.14);
+    --pw-accent: #ff9f52;     /* emberDark: slate text 8.37:1 */
+    --pw-on-accent: #1c1c1e;
+    --pw-accent-hover: #ffb57a;
+    --pw-link: #ff9f52;
+    --pw-allow: #30d158;
+    --pw-block: #ff453a;
+    --pw-nav: rgb(22 22 23 / 0.72);
+    --pw-shot-shadow: 0 0 0 1px rgb(255 255 255 / 0.1), 0 24px 64px -16px rgb(0 0 0 / 0.9);
+  }
+}
+
+@media (prefers-contrast: more) {
+  :root {
+    --pw-label-2: #3a3a3c;
+    --pw-hairline: rgb(0 0 0 / 0.35);
+  }
+  @media (prefers-color-scheme: dark) {
+    :root {
+      --pw-label-2: #d1d1d6;
+      --pw-hairline: rgb(255 255 255 / 0.4);
+    }
+  }
+}
+
+@layer base {
+  html {
+    -webkit-text-size-adjust: 100%;
+    text-size-adjust: 100%;
+    scroll-behavior: smooth;
+  }
+  @media (prefers-reduced-motion: reduce) {
+    html { scroll-behavior: auto; }
+  }
+  body {
+    background: var(--pw-canvas);
+    color: var(--pw-label);
+    font-family: var(--font-sans);
+    font-size: 1.0625rem; /* 17px */
+    line-height: 1.47;
+    letter-spacing: -0.012em;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+    text-rendering: optimizeLegibility;
+  }
+  h1, h2, h3 {
+    font-family: var(--font-display);
+    text-wrap: balance;
+  }
+  p { text-wrap: pretty; }
+  :focus-visible {
+    outline: 3px solid var(--pw-accent);
+    outline-offset: 3px;
+    border-radius: 6px;
+  }
+  [id] { scroll-margin-top: 72px; }
+  ::selection { background: #ffc285; color: #1d1d1f; }
+}
+
+@layer components {
+  .wrap {
+    width: 100%;
+    max-width: 1180px;
+    margin-inline: auto;
+    padding-inline: 22px;
+  }
+  @media (min-width: 768px) {
+    .wrap { padding-inline: 40px; }
+  }
+
+  /* Buttons: one prominent style (accent fill) and one quiet style. */
+  .btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.5rem;
+    min-height: 48px;
+    padding: 0 1.4rem;
+    border-radius: 999px;
+    font-size: 1.0625rem;
+    font-weight: 500;
+    letter-spacing: -0.01em;
+    white-space: nowrap;
+    transition: background-color 0.15s ease, color 0.15s ease, transform 0.1s ease, box-shadow 0.15s ease;
+    -webkit-tap-highlight-color: transparent;
+  }
+  .btn:active { transform: scale(0.97); }
+  .btn-primary {
+    background: var(--pw-accent);
+    color: var(--pw-on-accent);
+  }
+  .btn-primary:hover { background: var(--pw-accent-hover); }
+  .btn-secondary {
+    color: var(--pw-label);
+    box-shadow: inset 0 0 0 1px var(--pw-hairline);
+  }
+  .btn-secondary:hover { background: var(--pw-surface); box-shadow: inset 0 0 0 1px var(--pw-label-2); }
+
+  .link {
+    color: var(--pw-link);
+    text-underline-offset: 3px;
+  }
+  .link:hover { text-decoration: underline; }
+
+  .eyebrow {
+    font-size: 1.0625rem;
+    font-weight: 600;
+    letter-spacing: -0.01em;
+    color: var(--pw-label-2);
+  }
+  .display-1 {
+    font-size: clamp(2.75rem, 1.4rem + 6.2vw, 6rem);
+    line-height: 1.02;
+    font-weight: 700;
+    letter-spacing: -0.035em;
+  }
+  .display-2 {
+    font-size: clamp(2.125rem, 1.3rem + 3.6vw, 4rem);
+    line-height: 1.06;
+    font-weight: 700;
+    letter-spacing: -0.03em;
+  }
+  .lede {
+    font-size: clamp(1.1875rem, 1rem + 0.8vw, 1.5rem);
+    line-height: 1.38;
+    font-weight: 400;
+    letter-spacing: -0.015em;
+    color: var(--pw-label-2);
+  }
+
+  .shot {
+    display: block;
+    width: 100%;
+    height: auto;
+    object-fit: contain;
+    border-radius: 12px;
+    box-shadow: var(--pw-shot-shadow);
+    background: var(--pw-card);
+  }
+}
+
+/* <cav-img> hosts (see components/Shot.astro). The ratio is reserved before
+   the canvas draws; cavimg later sets the image's own ratio inline. */
+@layer components {
+  cav-img.cav {
+    display: block;
+    width: 100%;
+    overflow: hidden;
+    -webkit-user-select: none;
+    user-select: none;
+  }
+  cav-img.cav[data-ratio="1180/720"] { aspect-ratio: 1180 / 720; }
+  cav-img.cav[data-ratio="1000/560"] { aspect-ratio: 1000 / 560; }
+  .cav.theme-light-only { display: block; }
+  .cav.theme-dark-only { display: none; }
+  @media (prefers-color-scheme: dark) {
+    .cav.theme-light-only { display: none; }
+    .cav.theme-dark-only { display: block; }
+  }
+}

@@ -1,0 +1,19 @@
+---
+// A product screenshot drawn by <cav-img> (the cavimg package): the image is
+// rendered to a canvas so it can't be dragged out or right-click saved.
+// The box reserves its aspect ratio up front, so nothing shifts on load.
+// <noscript> keeps the image visible (and indexable) without JavaScript;
+// with JavaScript the element's shadow root has no slot, so it never renders.
+interface Props {
+  src: string;
+  alt: string;
+  width: number;
+  height: number;
+  class?: string;
+  fit?: "contain" | "cover" | "fill";
+}
+const { src, alt, width, height, class: cls, fit = "contain" } = Astro.props;
+---
+<cav-img src={src} alt={alt} fit={fit} data-ratio={`${width}/${height}`} class:list={["cav", cls]}>
+  <noscript><img src={src} alt={alt} width={width} height={height} class="block h-auto w-full" /></noscript>
+</cav-img>

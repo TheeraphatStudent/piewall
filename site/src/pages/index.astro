@@ -1,0 +1,255 @@
+---
+import Base from "../layouts/Base.astro";
+import Nav from "../components/Nav.astro";
+import Footer from "../components/Footer.astro";
+import SliceStory from "../components/SliceStory.astro";
+import GitHubIcon from "../components/GitHubIcon.astro";
+import Shot from "../components/Shot.astro";
+import Zap from "@lucide/astro/icons/zap";
+import DoorOpen from "@lucide/astro/icons/door-open";
+import ScanSearch from "@lucide/astro/icons/scan-search";
+import ShieldCheck from "@lucide/astro/icons/shield-check";
+import ArrowRightLeft from "@lucide/astro/icons/arrow-right-left";
+import SquareTerminal from "@lucide/astro/icons/square-terminal";
+import Download from "@lucide/astro/icons/download";
+import Copy from "@lucide/astro/icons/copy";
+import Check from "@lucide/astro/icons/check";
+import Coffee from "@lucide/astro/icons/coffee";
+import Package from "@lucide/astro/icons/package";
+import FileDown from "@lucide/astro/icons/file-down";
+import { GITHUB_URL, INSTALLER_URL, PORTABLE_URL, COFFEE_URL, TAGLINE } from "../config";
+
+const features = [
+  {
+    icon: Zap,
+    title: "Every rule, instantly.",
+    body: "Around 850 rules load in half a second, with friendly names for Store apps instead of package IDs.",
+  },
+  {
+    icon: DoorOpen,
+    title: "Open a port in one step.",
+    body: "Pick a port and a network. piewall writes the rule and marks it as yours, so it is easy to find later.",
+  },
+  {
+    icon: ScanSearch,
+    title: "Find the Block that wins.",
+    body: "Windows always lets Block beat Allow. piewall finds the Block rules undoing your openings, even the ones a dismissed popup left behind.",
+  },
+  {
+    icon: ShieldCheck,
+    title: "Safe by design.",
+    body: "It only reads until you act. Windows asks for permission only when something changes, and close removes only rules piewall made.",
+  },
+  {
+    icon: ArrowRightLeft,
+    title: "Export and import.",
+    body: "Save rules as JSON and bring them to another PC. Rules that already exist are skipped.",
+  },
+  {
+    icon: SquareTerminal,
+    title: "A command line for scripts.",
+    body: "Everything in the window is also a command, with exit codes your scripts can check.",
+  },
+];
+
+const commands: { cmd: string; note: string }[] = [
+  { cmd: "piewall list --port 8080", note: "rules that name port 8080" },
+  { cmd: "piewall open 8080 --profile public", note: "allow inbound TCP 8080 on public networks" },
+  { cmd: "piewall conflicts", note: "Block rules overriding Allow rules" },
+  { cmd: "piewall close 8080", note: "remove only the rules piewall opened" },
+];
+const copyText = commands.map((c) => c.cmd).join("\n");
+---
+<Base title={`piewall · ${TAGLINE}`}>
+  <Nav />
+  <main id="main">
+    <!-- Hero -->
+    <section class="overflow-hidden pt-16 md:pt-24" aria-labelledby="hero-title">
+      <div class="wrap text-center">
+        <p class="eyebrow">piewall for Windows</p>
+        <h1 id="hero-title" class="display-1 mx-auto mt-3 max-w-[11ch]">Your firewall, simple as pie.</h1>
+        <p class="lede mx-auto mt-6 max-w-[34rem]">
+          See every Windows Firewall rule at a glance, open a port in one step, and catch the Block rule quietly undoing your Allow.
+        </p>
+        <div class="mt-9 flex flex-col items-center justify-center gap-3 sm:flex-row">
+          <a href={INSTALLER_URL} class="btn btn-primary w-full max-w-72 sm:w-auto">
+            <Download size={19} stroke-width={2.2} aria-hidden="true" />
+            Download for Windows
+          </a>
+          <a href={GITHUB_URL} class="btn btn-secondary w-full max-w-72 sm:w-auto">
+            <GitHubIcon size={18} />
+            View on GitHub
+          </a>
+        </div>
+        <p class="mt-5 text-[0.8125rem] text-balance text-label-2">Windows 10 and 11 · Free and open source · macOS coming soon</p>
+      </div>
+      <div class="wrap mt-14 md:mt-20">
+        <Shot src="/images/app-light.png" width={1180} height={720} class="shot theme-light-only" alt="The piewall window listing firewall rules with Allow and Block states, and a yellow banner reporting that a Block rule overrides an Allow rule for TCP port 8080." />
+        <Shot src="/images/app-dark.png" width={1180} height={720} class="shot theme-dark-only" alt="The piewall window listing firewall rules with Allow and Block states, and a yellow banner reporting that a Block rule overrides an Allow rule for TCP port 8080." />
+      </div>
+    </section>
+
+    <!-- Features -->
+    <section id="features" class="mt-24 bg-surface py-24 md:mt-32 md:py-32" aria-labelledby="features-title">
+      <div class="wrap">
+        <p class="eyebrow">Features</p>
+        <h2 id="features-title" class="display-2 mt-2"><span class="block">Every rule in view.</span> <span class="block">Every change on purpose.</span></h2>
+        <ul class="mt-14 grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+          {features.map(({ icon: Icon, title, body }) => (
+            <li class="rounded-[var(--radius-card)] bg-card p-7 md:p-8">
+              <Icon size={30} stroke-width={1.8} class="text-accent" aria-hidden="true" />
+              <h3 class="mt-5 text-[1.3125rem] font-semibold leading-snug tracking-[-0.02em]">{title}</h3>
+              <p class="mt-2 text-label-2">{body}</p>
+            </li>
+          ))}
+        </ul>
+      </div>
+    </section>
+
+    <!-- The slice you opened -->
+    <section id="slice" class="py-24 md:py-36" aria-labelledby="slice-title-h">
+      <div class="wrap grid items-center gap-14 md:grid-cols-2 md:gap-20">
+        <div class="md:order-2">
+          <p class="eyebrow">How conflicts work</p>
+          <h2 id="slice-title-h" class="display-2 mt-2">The slice you opened.</h2>
+          <div class="mt-8 space-y-5 text-[1.1875rem] leading-[1.5] text-label-2">
+            <p>
+              <strong class="font-semibold text-label">Think of your firewall as a whole pie.</strong>{" "}
+              Opening a port lifts one slice out: an Allow rule that lets that traffic through.
+            </p>
+            <p>
+              <strong class="font-semibold text-label">But Block always wins.</strong>{" "}
+              If any Block rule covers the same port or program, Windows obeys it and ignores your Allow. Nothing tells you. The connection just fails.
+            </p>
+            <p>
+              <strong class="font-semibold text-label">Often you made it without knowing.</strong>{" "}
+              Dismiss a Windows Security popup and Windows quietly adds a Block rule for that program. piewall finds these, shows a yellow banner, and lets you review and fix them.
+            </p>
+          </div>
+        </div>
+        <div class="md:order-1">
+          <SliceStory />
+        </div>
+      </div>
+    </section>
+
+    <!-- CLI -->
+    <section id="cli" class="bg-surface py-24 md:py-32" aria-labelledby="cli-title">
+      <div class="wrap">
+        <p class="eyebrow">Command line</p>
+        <h2 id="cli-title" class="display-2 mt-2 max-w-[18ch]">Same power, from the keyboard.</h2>
+        <p class="lede mt-5 max-w-[36rem]">Script your setup, check a port in CI, or fix a conflict over SSH. Every command exits with a code your scripts can read.</p>
+
+        <div class="mt-12 grid items-start gap-6 lg:grid-cols-[1fr_1.05fr]">
+          <div class="terminal overflow-hidden rounded-[var(--radius-card)]">
+            <div class="flex items-center justify-between border-b border-white/10 py-1 pl-5 pr-2">
+              <span class="text-[0.8125rem] text-[#A1A1A6]">PowerShell</span>
+              <button type="button" class="copy-btn flex min-h-11 items-center gap-1.5 rounded-lg px-3 text-[0.8125rem] font-medium text-[#F5F5F7] transition-colors hover:bg-white/10" data-copy={copyText}>
+                <Copy size={15} aria-hidden="true" class="copy-idle" />
+                <Check size={15} aria-hidden="true" class="copy-done hidden" />
+                <span class="copy-label">Copy</span><span class="sr-only"> commands</span>
+              </button>
+              <span class="copy-status sr-only" aria-live="polite"></span>
+            </div>
+            <pre class="overflow-x-auto whitespace-pre-wrap break-words px-5 py-5 font-mono text-[0.875rem] leading-[1.75]"><code>{commands.map(({ cmd, note }, i) => (
+              <span class="block">{i > 0 && <span class="block h-3" />}<span class="block text-[#8E8E93]"># {note}</span><span class="block"><span class="select-none text-[#FF9F52]">&gt; </span><span class="text-[#F5F5F7]">{cmd}</span></span></span>
+            ))}</code></pre>
+          </div>
+          <figure>
+            <Shot
+              src="/images/cli.png"
+              width={1000}
+              height={560}
+              alt="A PowerShell window running piewall conflicts, which reports a Block rule for python.exe overriding the Allow rule for TCP 8080, then opening and closing port 8080."
+              class="rounded-[var(--radius-card)] shadow-[var(--pw-shot-shadow)]"
+            />
+            <figcaption class="mt-3 text-[0.8125rem] text-label-2">Real output from piewall conflicts, open and close.</figcaption>
+          </figure>
+        </div>
+      </div>
+    </section>
+
+    <!-- Showcase -->
+    <section id="showcase" class="py-24 md:py-32" aria-labelledby="showcase-title">
+      <div class="wrap">
+        <div class="text-center">
+          <p class="eyebrow">Light and dark</p>
+          <h2 id="showcase-title" class="display-2 mx-auto mt-2 max-w-[18ch]">At home on your desktop, day or night.</h2>
+          <p class="lede mx-auto mt-5 max-w-[34rem]">piewall follows your Windows appearance. No settings to change.</p>
+        </div>
+        <div class="mt-14 grid gap-8 md:grid-cols-2 md:gap-6">
+          <figure>
+            <Shot src="/images/app-light.png" width={1180} height={720} class="shot"
+              alt="piewall in the light appearance: a white window with the rule list and filter controls." />
+            <figcaption class="mt-3 text-center text-[0.8125rem] text-label-2">Light</figcaption>
+          </figure>
+          <figure>
+            <Shot src="/images/app-dark.png" width={1180} height={720} class="shot"
+              alt="piewall in the dark appearance: the same rule list on a dark gray window." />
+            <figcaption class="mt-3 text-center text-[0.8125rem] text-label-2">Dark</figcaption>
+          </figure>
+        </div>
+      </div>
+    </section>
+
+    <!-- Download -->
+    <section id="download" class="border-t border-hairline py-24 md:py-32" aria-labelledby="download-title">
+      <div class="wrap">
+        <div class="text-center">
+          <h2 id="download-title" class="display-2">Get piewall.</h2>
+          <p class="lede mx-auto mt-5 max-w-[32rem]">Free for Windows 10 and 11. Reading your rules needs no admin rights.</p>
+        </div>
+        <div class="mx-auto mt-12 grid max-w-[46rem] gap-4 sm:grid-cols-2">
+          <div class="flex flex-col rounded-[var(--radius-card)] bg-surface p-7">
+            <Package size={28} stroke-width={1.8} class="text-label" aria-hidden="true" />
+            <h3 class="mt-4 text-[1.3125rem] font-semibold tracking-[-0.02em]">Installer</h3>
+            <p class="mt-1 mb-6 text-label-2">Adds piewall to the Start menu. Recommended for most people.</p>
+            <a href={INSTALLER_URL} class="btn btn-primary mt-auto">
+              <Download size={19} stroke-width={2.2} aria-hidden="true" />
+              Download Installer
+            </a>
+          </div>
+          <div class="flex flex-col rounded-[var(--radius-card)] bg-surface p-7">
+            <FileDown size={28} stroke-width={1.8} class="text-label" aria-hidden="true" />
+            <h3 class="mt-4 text-[1.3125rem] font-semibold tracking-[-0.02em]">Portable</h3>
+            <p class="mt-1 mb-6 text-label-2">One .exe, nothing to install. Run it from anywhere.</p>
+            <a href={PORTABLE_URL} class="btn btn-secondary mt-auto">Download Portable .exe</a>
+          </div>
+        </div>
+        <p class="mt-6 text-center text-[0.8125rem] text-label-2">
+          Source, release notes and checksums on <a class="link" href={`${GITHUB_URL}/releases`}>GitHub Releases</a>.
+        </p>
+      </div>
+    </section>
+
+    <!-- Coffee -->
+    <section id="coffee" class="bg-surface py-24 md:py-32" aria-labelledby="coffee-title">
+      <div class="wrap mx-auto max-w-[40rem] text-center">
+        <Coffee size={36} stroke-width={1.7} class="mx-auto text-accent" aria-hidden="true" />
+        <h2 id="coffee-title" class="display-2 mt-5">Saved you an afternoon?</h2>
+        <p class="lede mt-5">
+          piewall is free, and it will stay free. If it helped, you can buy me a coffee. It keeps the next version coming, macOS included.
+        </p>
+        <a href={COFFEE_URL} class="btn btn-primary mt-9">
+          Buy me a coffee · $5
+        </a>
+        <p class="mt-4 text-[0.8125rem] text-label-2">One time, secure checkout by Stripe. No account needed.</p>
+      </div>
+    </section>
+  </main>
+  <Footer />
+</Base>
+
+<style>
+  .terminal {
+    background: #1c1c1e;
+    box-shadow: 0 24px 64px -24px rgb(0 0 0 / 0.35);
+  }
+  @media (prefers-color-scheme: dark) {
+    .terminal { box-shadow: 0 0 0 1px rgb(255 255 255 / 0.12); }
+  }
+</style>
+
+<script>
+  import "../scripts/site.ts";
+</script>

@@ -1,0 +1,23 @@
+---
+import Mark from "./Mark.astro";
+import { GITHUB_URL, LICENSE_URL, RELEASES_URL } from "../config";
+---
+<footer class="mt-auto border-t border-hairline bg-surface text-[0.8125rem] text-label-2">
+  <div class="wrap py-10">
+    <div class="flex flex-col gap-6 sm:flex-row sm:items-center sm:justify-between">
+      <a href="/" class="flex min-h-11 items-center gap-2 text-label" aria-label="piewall home">
+        <Mark id="foot" size={20} />
+        <span class="font-display text-[1.0625rem] font-semibold tracking-[-0.02em]">piewall</span>
+      </a>
+      <ul class="flex flex-wrap gap-x-6">
+        <li><a class="flex min-h-11 items-center hover:text-label hover:underline" href={GITHUB_URL}>GitHub</a></li>
+        <li><a class="flex min-h-11 items-center hover:text-label hover:underline" href={RELEASES_URL}>Releases</a></li>
+        <li><a class="flex min-h-11 items-center hover:text-label hover:underline" href={LICENSE_URL}>MIT License</a></li>
+      </ul>
+    </div>
+    <div class="mt-6 border-t border-hairline pt-6 leading-relaxed">
+      <p>© 2026 Theeraphat. piewall is free and open source under the MIT License.</p>
+      <p class="mt-1">piewall is an independent project and is not affiliated with or endorsed by Microsoft. Windows and Windows Defender Firewall are trademarks of Microsoft Corporation.</p>
+    </div>
+  </div>
+</footer>

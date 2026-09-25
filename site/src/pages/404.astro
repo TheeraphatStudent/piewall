@@ -1,0 +1,17 @@
+---
+import Base from "../layouts/Base.astro";
+import Nav from "../components/Nav.astro";
+import Footer from "../components/Footer.astro";
+---
+<Base title="Page not found · piewall" description="This page doesn't exist." path="/404" noindex>
+  <Nav />
+  <main id="main" class="flex flex-1 items-center py-24 md:py-32">
+    <div class="wrap mx-auto max-w-[36rem] text-center">
+      <p class="eyebrow">404</p>
+      <h1 class="display-2 mt-2">This slice is missing.</h1>
+      <p class="lede mt-5">The page you asked for isn't here. It may have moved, or the link has a typo.</p>
+      <a href="/" class="btn btn-primary mt-9">Back to piewall</a>
+    </div>
+  </main>
+  <Footer />
+</Base>
