@@ -1,6 +1,6 @@
 {
   "name": "piewall-mcp",
-  "version": "0.2.1",
+  "version": "0.2.2",
   "description": "MCP server for piewall: list, analyse and manage Windows Firewall rules from AI assistants",
   "type": "module",
   "license": "MIT",
