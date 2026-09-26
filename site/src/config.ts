@@ -1,8 +1,8 @@
 export const GITHUB_URL = "https://github.com/TheeraphatStudent/piewall";
 export const INSTALLER_URL = GITHUB_URL + "/releases/latest/download/piewall-setup.exe";
 export const PORTABLE_URL = GITHUB_URL + "/releases/latest/download/piewall.exe";
-export const MAC_ARM_URL = GITHUB_URL + "/releases/latest/download/piewall-macos-arm64.dmg";
-export const MAC_INTEL_URL = GITHUB_URL + "/releases/latest/download/piewall-macos-x86_64.dmg";
+export const MAC_ARM_URL = GITHUB_URL + "/releases/latest/download/piewall-macos-arm64.pkg";
+export const MAC_INTEL_URL = GITHUB_URL + "/releases/latest/download/piewall-macos-x86_64.pkg";
 export const COFFEE_URL: string = import.meta.env.PUBLIC_COFFEE_URL || "#coffee";
 export const SITE_URL = "https://piewall.th33raphat.dev";
 

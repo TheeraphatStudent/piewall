@@ -1,0 +1,10 @@
+#!/bin/sh
+# Runs as root after Installer copies piewall.app to /Applications: put `piewall` on the PATH.
+# A wrapper, not a symlink, so the CLI always starts from inside the app bundle.
+mkdir -p /usr/local/bin
+cat > /usr/local/bin/piewall <<'SH'
+#!/bin/sh
+exec /Applications/piewall.app/Contents/MacOS/piewall-cli "$@"
+SH
+chmod 755 /usr/local/bin/piewall
+exit 0

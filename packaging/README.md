@@ -141,12 +141,15 @@ expires.
 
 ## macOS
 
-`packaging/build-macos.sh` builds `dist/release/piewall-macos-<arch>.dmg` (piewall.app with the
-GUI and `Contents/MacOS/piewall-cli`), using `packaging/piewall-macos.spec`, `iconutil` and
-`hdiutil`. CI: `.github/workflows/macos.yml` builds arm64 (`macos-15`) and x86_64
-(`macos-15-intel`); on tags `release.yml` calls it and uploads the DMGs to the release.
+`packaging/build-macos.sh` builds `dist/release/piewall-macos-<arch>.pkg`, using
+`packaging/piewall-macos.spec`, `iconutil`, `pkgbuild` and `productbuild`. The installer asks for
+an admin password, installs `/Applications/piewall.app` (GUI + `Contents/MacOS/piewall-cli`) and
+runs `packaging/macos-scripts/postinstall`, which adds the `/usr/local/bin/piewall` wrapper.
+Apps installed by Installer are not quarantined, so only the .pkg itself meets Gatekeeper. CI: `.github/workflows/macos.yml` builds arm64 (`macos-15`) and x86_64
+(`macos-15-intel`); on tags `release.yml` calls it and uploads the packages to the release.
 
-The app is signed ad hoc only, so Gatekeeper blocks the first launch until the user picks
-**Open Anyway** in System Settings › Privacy & Security. To ship it cleanly: an Apple Developer
+The app is signed ad hoc and the .pkg is unsigned, so Gatekeeper blocks the first open of the
+.pkg until the user picks **Open Anyway** in System Settings › Privacy & Security. To ship it cleanly: an Apple Developer
 ID (US$99/year), `codesign --options runtime --sign "Developer ID Application: …"` in place of
-the ad hoc signature, then `xcrun notarytool submit --wait` and `xcrun stapler staple` on the DMG.
+the ad hoc signature, `productsign --sign "Developer ID Installer: …"` on the .pkg, then `xcrun notarytool submit --wait`
+and `xcrun stapler staple` on the .pkg.
