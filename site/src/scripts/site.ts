@@ -1,6 +1,17 @@
 // All client JS for the home page, bundled into one hashed file.
 import "cavimg"; // registers <cav-img>
 
+// On a Mac, the main Download buttons fetch the Apple Silicon build (Intel is listed in #download).
+// iPads also report "MacIntel", so rule out touch screens.
+if (/^Mac/.test(navigator.platform) && navigator.maxTouchPoints < 2) {
+  for (const a of document.querySelectorAll<HTMLAnchorElement>("a[data-mac-href]")) {
+    a.href = a.dataset.macHref!;
+    const label = a.querySelector(".os-label");
+    if (label && a.dataset.macLabel) label.textContent = a.dataset.macLabel;
+    if (a.dataset.macAria) a.setAttribute("aria-label", a.dataset.macAria);
+  }
+}
+
 for (const btn of document.querySelectorAll<HTMLButtonElement>(".copy-btn")) {
   const label = btn.querySelector(".copy-label");
   const idle = btn.querySelector(".copy-idle");

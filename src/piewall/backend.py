@@ -2,7 +2,9 @@
 
 from __future__ import annotations
 
+import contextlib
 import ctypes
+import sys
 from ctypes import wintypes
 from functools import lru_cache
 from typing import Protocol
@@ -139,3 +141,17 @@ class ComBackend:
 
     def set_action(self, name: str, action: str) -> int:
         return self._set(name, "Action", ACTIONS[action])
+
+
+def default_backend() -> Backend:
+    """The live firewall: Windows Defender Firewall, or pf on macOS."""
+    if sys.platform == "darwin":
+        from .pf import PfBackend
+
+        return PfBackend()
+    return ComBackend()
+
+
+def batch(backend: Backend):
+    """Group changes into one commit (on macOS: one password prompt instead of one per rule)."""
+    return getattr(backend, "batch", contextlib.nullcontext)()

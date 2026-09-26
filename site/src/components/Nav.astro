@@ -1,6 +1,6 @@
 ---
 import Mark from "./Mark.astro";
-import { INSTALLER_URL } from "../config";
+import { INSTALLER_URL, MAC_ARM_URL } from "../config";
 interface Props { links?: boolean }
 const { links = true } = Astro.props;
 const items = [
@@ -24,7 +24,7 @@ const items = [
           ))}
         </ul>
       )}
-      <a href={INSTALLER_URL} class="group flex min-h-11 items-center" aria-label="Download piewall for Windows">
+      <a href={INSTALLER_URL} data-mac-href={MAC_ARM_URL} data-mac-aria="Download piewall for Mac" class="group flex min-h-11 items-center" aria-label="Download piewall for Windows">
         <span class="rounded-full bg-accent px-3.5 py-1.5 text-[0.875rem] font-medium text-on-accent transition-colors group-hover:bg-accent-hover">Download</span>
       </a>
     </div>

@@ -11,7 +11,7 @@ import tempfile
 from pathlib import Path
 from typing import Callable
 
-from .backend import Backend, FirewallError
+from .backend import Backend, FirewallError, batch
 from .conflicts import find_conflicts
 from .elevate import ElevationCancelled, is_admin, run_elevated
 from .listeners import current_listeners
@@ -30,7 +30,7 @@ def _port(value: str) -> int:
 
 
 def build_parser() -> argparse.ArgumentParser:
-    p = argparse.ArgumentParser(prog="piewall", description="Manage Windows Firewall rules.")
+    p = argparse.ArgumentParser(prog="piewall", description="Manage Windows Firewall (or macOS pf) rules.")
     p.add_argument("--elevated-output", help=argparse.SUPPRESS)
     sub = p.add_subparsers(dest="command", required=True, metavar="COMMAND")
 
@@ -213,7 +213,7 @@ def main(argv: list[str] | None = None, *, backend_factory=None, admin_check=is_
         return _relaunch_elevated(argv, elevator)
 
     if backend_factory is None:
-        from .backend import ComBackend as backend_factory
+        from .backend import default_backend as backend_factory
 
     with contextlib.ExitStack() as stack:
         if args.elevated_output:
@@ -221,7 +221,12 @@ def main(argv: list[str] | None = None, *, backend_factory=None, admin_check=is_
             stack.enter_context(contextlib.redirect_stdout(f))
             stack.enter_context(contextlib.redirect_stderr(f))
         try:
-            return run_command(args, backend_factory())
+            backend = backend_factory()
+            with batch(backend):
+                return run_command(args, backend)
+        except ElevationCancelled:
+            print("Password prompt cancelled; nothing changed.", file=sys.stderr)
+            return EXIT_CANCELLED
         except (FirewallError, OSError, ValueError) as exc:
             print(f"Error: {exc}", file=sys.stderr)
             return EXIT_FAIL

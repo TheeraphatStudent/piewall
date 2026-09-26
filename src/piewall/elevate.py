@@ -14,6 +14,8 @@ class ElevationCancelled(Exception):
 
 
 def is_admin() -> bool:
+    if sys.platform == "darwin":
+        return True  # pf.PfBackend asks for the admin password itself, once per change
     try:
         return bool(ctypes.windll.shell32.IsUserAnAdmin())
     except (AttributeError, OSError):
