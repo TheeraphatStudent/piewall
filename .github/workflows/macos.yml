@@ -1,8 +1,8 @@
 name: macOS
 
-# Builds piewall.app as a DMG for Apple Silicon and Intel, runs the tests, and smoke-tests the
-# bundle. Pushes and pull requests keep the DMGs as workflow artifacts; release.yml calls this
-# workflow for tags and attaches the DMGs to the GitHub Release.
+# Builds the piewall.app installer (.pkg) for Apple Silicon and Intel, runs the tests, and smoke-tests the
+# bundle. Pushes and pull requests keep the packages as workflow artifacts; release.yml calls
+# this workflow for tags and attaches them to the GitHub Release.
 
 on:
   push:

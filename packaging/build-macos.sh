@@ -1,5 +1,5 @@
 #!/bin/sh
-# Build dist/release/piewall-macos-<arch>.dmg (piewall.app inside). Run from anywhere on macOS.
+# Build dist/release/piewall-macos-<arch>.pkg (installs piewall.app + the piewall command). Run from anywhere on macOS.
 #   packaging/build-macos.sh [--skip-tests]
 set -eu
 cd "$(dirname "$0")/.."
@@ -28,12 +28,21 @@ codesign --verify --deep --strict dist/piewall.app
 # Smoke test: the bundled CLI runs and reads without a password prompt.
 dist/piewall.app/Contents/MacOS/piewall-cli list >/dev/null
 
-dmg="dist/release/piewall-macos-$arch.dmg"
-rm -f "$dmg"
-stage="$work/dmg"
-mkdir -p "$stage"
-cp -R dist/piewall.app "$stage/"
-ln -s /Applications "$stage/Applications"
-hdiutil create -volname piewall -srcfolder "$stage" -format UDZO -fs HFS+ "$dmg" >/dev/null
-(cd dist/release && shasum -a 256 "$(basename "$dmg")" > "$(basename "$dmg").sha256")
-echo "Built $dmg"
+# Installer package: macOS Installer asks for an admin password to install into /Applications,
+# and apps it installs carry no quarantine flag, so piewall opens without Gatekeeper prompts.
+version=$(sed -n 's/^version *= *"\([^"]*\)".*/\1/p' pyproject.toml | head -n1)
+root="$work/pkgroot"
+mkdir -p "$root/Applications"
+ditto --noextattr --noqtn dist/piewall.app "$root/Applications/piewall.app"  # drop quarantine & co.
+pkgbuild --analyze --root "$root" "$work/component.plist" >/dev/null
+# Install exactly at /Applications/piewall.app, even if another copy exists elsewhere.
+plutil -replace 0.BundleIsRelocatable -bool NO "$work/component.plist"
+pkgbuild --root "$root" --component-plist "$work/component.plist" \
+  --scripts packaging/macos-scripts --install-location / \
+  --identifier io.github.theeraphatstudent.piewall --version "$version" "$work/component.pkg"
+
+pkg="dist/release/piewall-macos-$arch.pkg"
+rm -f "$pkg"
+productbuild --package "$work/component.pkg" "$pkg"
+(cd dist/release && shasum -a 256 "$(basename "$pkg")" > "$(basename "$pkg").sha256")
+echo "Built $pkg"

@@ -50,10 +50,12 @@ Builds are not code-signed yet, so Windows SmartScreen may show
 "Windows protected your PC" the first time: choose **More info → Run anyway**.
 Checksums are in `SHA256SUMS.txt`.
 
-**macOS 12+**: `piewall-macos-arm64.dmg` (Apple Silicon) or `piewall-macos-x86_64.dmg` (Intel).
-Drag piewall to Applications. It is not notarized yet: open it once, then choose
-**Open Anyway** in System Settings › Privacy & Security. The command line is inside the app:
-`/Applications/piewall.app/Contents/MacOS/piewall-cli`.
+**macOS 12+**: `piewall-macos-arm64.pkg` (Apple Silicon) or `piewall-macos-x86_64.pkg` (Intel).
+Open it and follow the installer; it asks for your administrator password, installs
+`/Applications/piewall.app` and adds the `piewall` command to `/usr/local/bin`. The package is
+not notarized yet, so the first time macOS says it can't verify it: click **Done**, then
+**Open Anyway** in System Settings › Privacy & Security. Uninstall:
+`sudo rm -rf /Applications/piewall.app /usr/local/bin/piewall`.
 
 On macOS piewall manages its own rules in the pf anchor `com.apple/piewall` (the stock
 `/etc/pf.conf` already loads it) and keeps them across reboots with a LaunchDaemon. pf filters
@@ -135,7 +137,7 @@ uv run piewall-gui               # window from source
 uv run piewall list              # CLI from source
 uv run pytest                    # tests
 powershell -File packaging\build.ps1   # build exes + installer into dist\release
-packaging/build-macos.sh               # macOS: build piewall.app + .dmg into dist/release
+packaging/build-macos.sh               # macOS: build piewall.app + .pkg into dist/release
 ```
 
 - Releases: bump `version` in `pyproject.toml`, tag `vX.Y.Z`, push the tag;

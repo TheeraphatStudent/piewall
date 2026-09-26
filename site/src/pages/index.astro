@@ -219,12 +219,12 @@ const copyText = commands.map((c) => c.cmd).join("\n");
           <div class="flex flex-col rounded-[var(--radius-card)] bg-surface p-7 sm:col-span-2 lg:col-span-1">
             <Laptop size={28} stroke-width={1.8} class="text-label" aria-hidden="true" />
             <h3 class="mt-4 text-[1.3125rem] font-semibold tracking-[-0.02em]">Mac</h3>
-            <p class="mt-1 mb-6 text-label-2">Drag piewall to Applications. Rules use the built-in pf firewall. First launch: open it once, then choose Open Anyway in System Settings › Privacy &amp; Security.</p>
+            <p class="mt-1 mb-6 text-label-2">The installer asks for your password, then adds piewall to Applications and the command line. Rules use the built-in pf firewall. First open: choose Open Anyway in System Settings › Privacy &amp; Security.</p>
             <a href={MAC_ARM_URL} class="btn btn-secondary mt-auto">
               <Download size={19} stroke-width={2.2} aria-hidden="true" />
-              Apple Silicon (.dmg)
+              Apple Silicon (.pkg)
             </a>
-            <a href={MAC_INTEL_URL} class="link mt-1 flex min-h-11 items-center justify-center text-[0.875rem]">Intel Mac (.dmg)</a>
+            <a href={MAC_INTEL_URL} class="link mt-1 flex min-h-11 items-center justify-center text-[0.875rem]">Intel Mac (.pkg)</a>
           </div>
         </div>
         <p class="mt-6 text-center text-[0.8125rem] text-label-2">

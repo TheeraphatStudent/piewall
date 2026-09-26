@@ -14,6 +14,6 @@ Follow `skills/piewall/SKILL.md` (install it for your agent with
   `backend`/`elevate` are Windows-specific, `pf` is the macOS backend; `cli`, `gui`, `theme`, `mcp_server`).
 - Only read-only commands (`list`, `conflicts`, `export`) may run against the real firewall
   without asking the user. Changes pop a UAC prompt on the user's desktop.
-- Packaging: `packaging/` (PyInstaller + Inno Setup; `build-macos.sh` for the .app/.dmg), site: `site/` (Astro → Cloudflare),
+- Packaging: `packaging/` (PyInstaller + Inno Setup; `build-macos.sh` for the .app/.pkg), site: `site/` (Astro → Cloudflare),
   brand: `brand/`.
 - Commit messages: plain, no AI attribution trailers.

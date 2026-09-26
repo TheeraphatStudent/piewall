@@ -96,7 +96,7 @@ jobs:
     uses: ./.github/workflows/macos.yml
 
   macos-upload:
-    # Attach the DMGs once the release exists (the Windows job creates it).
+    # Attach the macOS installers once the release exists (the Windows job creates it).
     needs: [release, macos]
     runs-on: ubuntu-latest
     timeout-minutes: 10
@@ -107,13 +107,13 @@ jobs:
         with:
           pattern: piewall-macos-*
           merge-multiple: true
-          path: dmg
+          path: macos
 
       - name: Upload to the release
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           TAG: ${{ github.ref_name }}
-        run: gh release upload "$TAG" dmg/* --repo "$GITHUB_REPOSITORY"
+        run: gh release upload "$TAG" macos/* --repo "$GITHUB_REPOSITORY"
 
   npm:
     # Publish the npm launcher only once the release (and so piewall-mcp.exe) exists: the launcher
