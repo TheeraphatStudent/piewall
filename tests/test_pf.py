@@ -1,6 +1,7 @@
 """pf rendering and commits. The fake runner stands in for the root shell; no firewall is touched."""
 
 import json
+import shlex
 
 import pytest
 
@@ -49,7 +50,7 @@ class Root:
         if self.cancel:
             raise ElevationCancelled
         self.scripts.append(script)
-        src = script.split("/usr/bin/install -m 644 ")[1].split(" ")[0]
+        src = shlex.split(script.split("/usr/bin/install -m 644 ")[1])[0]
         self.state.write_text(open(src).read())
 
 
