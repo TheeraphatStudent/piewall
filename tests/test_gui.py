@@ -64,3 +64,20 @@ def test_make_allow_clears_conflict(app):
     app.set_action("allow")
     assert app.conflicts == []
     assert app.banner.winfo_manager() == ""
+
+
+@pytest.mark.parametrize("found, opened", [(("9.9.9", "https://dl/x.pkg"), ["https://dl/x.pkg"]),
+                                           (None, [])])
+def test_update_check_offers_download(app, root, monkeypatch, found, opened):
+    import time
+
+    asked, urls = [], []
+    monkeypatch.setattr(gui.update, "check", lambda: found)
+    monkeypatch.setattr(gui.messagebox, "askyesno", lambda *a, **k: asked.append(a) or True)
+    monkeypatch.setattr(gui.webbrowser, "open", urls.append)
+    app.check_for_update()
+    deadline = time.monotonic() + 3
+    while time.monotonic() < deadline and not urls:
+        root.update()
+    assert urls == opened
+    assert len(asked) == len(opened)

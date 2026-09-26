@@ -1,6 +1,6 @@
 [project]
 name = "piewall"
-version = "0.2.1"
+version = "0.2.2"
 description = "Manage Windows Firewall rules from a simple window or the command line"
 readme = "README.md"
 license = "MIT"

@@ -1,4 +1,4 @@
-"""macOS firewall access through pf (the packet filter behind `pfctl`).
+"""macOS firewall access: pf (the packet filter behind `pfctl`) and the Application Firewall.
 
 piewall owns one pf anchor, `com.apple/piewall`. The stock /etc/pf.conf already evaluates
 every `com.apple/*` anchor, so nothing outside piewall's own files is edited. The rules
@@ -6,7 +6,10 @@ piewall manages live in STATE_FILE (readable by everyone, so listing needs no pa
 each change rewrites it, reloads the anchor and installs a LaunchDaemon that reloads it at
 boot. Changes run as root through the standard macOS administrator password prompt.
 
-pf filters packets, not programs: rules with a program or service are refused.
+pf filters packets, not programs. Per-program rules are the macOS Application Firewall's
+(System Settings > Network > Firewall): its app list is shown as rules in the
+ALF_GROUP group, and program rules piewall adds go there. It only filters incoming traffic
+and has no per-app on/off, so its rules show as enabled exactly when that firewall is on.
 """
 
 from __future__ import annotations
@@ -14,6 +17,7 @@ from __future__ import annotations
 import contextlib
 import json
 import os
+import re
 import shlex
 import subprocess
 import tempfile
@@ -30,6 +34,8 @@ STATE_FILE = STATE_DIR / "rules.json"
 PF_FILE = STATE_DIR / "pf.rules"
 DAEMON_LABEL = "io.github.theeraphatstudent.piewall"
 DAEMON_FILE = Path("/Library/LaunchDaemons") / f"{DAEMON_LABEL}.plist"
+ALF = "/usr/libexec/ApplicationFirewall/socketfilterfw"
+ALF_GROUP = "macOS Application Firewall"
 
 # pfctl -E takes a reference on pf so it stays on alongside other pf users (VPNs, Docker…).
 _LOAD = f"/sbin/pfctl -q -E; /sbin/pfctl -q -a {ANCHOR} -f {shlex.quote(str(PF_FILE))}"
@@ -97,6 +103,33 @@ def render(rules: list[Rule]) -> str:
         line + "\n" for line in lines)
 
 
+def parse_alf(listapps: str, firewall_on: bool) -> list[Rule]:
+    """`socketfilterfw --listapps` output -> one incoming rule per app."""
+    rules, path = [], None
+    for line in listapps.splitlines():
+        entry = re.match(r"\s*\d+\s*:\s*(.+?)\s*$", line)
+        if entry:
+            path = entry.group(1)
+        elif path and line.strip().startswith("("):
+            rules.append(Rule(
+                name=path, enabled=firewall_on, direction="in",
+                action="block" if "block" in line.lower() else "allow", program=path,
+                group=ALF_GROUP, description="Incoming connections (macOS Application Firewall)",
+                display_name=Path(path).name.removesuffix(".app")))
+            path = None
+    return rules
+
+
+def _read_alf() -> list[Rule]:
+    """The Application Firewall's app list; reading needs no password."""
+    try:
+        state = subprocess.run([ALF, "--getglobalstate"], capture_output=True, text=True).stdout
+        apps = subprocess.run([ALF, "--listapps"], capture_output=True, text=True).stdout
+    except OSError:  # not macOS
+        return []
+    return parse_alf(apps, "State = 0" not in state)
+
+
 def _run_as_root(script: str) -> None:
     if os.geteuid() == 0:
         cmd = ["/bin/sh", "-c", script]
@@ -110,16 +143,18 @@ def _run_as_root(script: str) -> None:
         return
     if "(-128)" in done.stderr:  # user pressed Cancel
         raise ElevationCancelled
-    raise FirewallError(done.stderr.strip() or f"pfctl failed ({done.returncode})")
+    raise FirewallError(done.stderr.strip() or f"firewall change failed ({done.returncode})")
 
 
 class PfBackend:
-    def __init__(self, state_file: Path = STATE_FILE, run=_run_as_root) -> None:
+    def __init__(self, state_file: Path = STATE_FILE, run=_run_as_root, read_alf=_read_alf) -> None:
         self.state_file = state_file
         self._run = run
+        self._read_alf = read_alf
         self._rules: list[Rule] = []
         self._depth = 0
-        self._dirty = False
+        self._dirty = False  # pf rules changed
+        self._alf: list[str] = []  # pending socketfilterfw commands
 
     def _load(self) -> list[Rule]:
         try:
@@ -129,13 +164,14 @@ class PfBackend:
         return [Rule.from_dict(d) for d in data["rules"]]
 
     def _current(self) -> list[Rule]:
-        """Fresh from disk (another piewall may have changed it), except mid-batch."""
+        """piewall's pf rules, fresh from disk (another piewall may have changed them),
+        except mid-batch."""
         if not self._depth:
             self._rules = self._load()
         return self._rules
 
     def list_rules(self) -> list[Rule]:
-        return list(self._current())
+        return [*self._current(), *self._read_alf()]
 
     @contextlib.contextmanager
     def batch(self):
@@ -144,7 +180,7 @@ class PfBackend:
         self._depth += 1
         try:
             yield
-            if self._depth == 1 and self._dirty:
+            if self._depth == 1:
                 self._commit()
         except BaseException:
             self._rules = saved
@@ -152,20 +188,31 @@ class PfBackend:
         finally:
             self._depth -= 1
             if not self._depth:
-                self._dirty = False
+                self._dirty, self._alf = False, []
 
-    def _changed(self, rules: list[Rule]) -> None:
-        before, self._rules = self._rules, rules
+    def _pending(self) -> None:
+        """Commit now, unless a batch will."""
         if self._depth:
-            self._dirty = True
             return
         try:
             self._commit()
-        except BaseException:
-            self._rules = before
-            raise
+        finally:
+            self._dirty, self._alf = False, []
+
+    def _changed(self, rules: list[Rule]) -> None:
+        self._rules, self._dirty = rules, True
+        self._pending()
+
+    def _alf_do(self, *commands: str) -> None:
+        self._alf += [f"{ALF} {c}" for c in commands]
+        self._pending()
 
     def _commit(self) -> None:
+        if not (self._dirty or self._alf):
+            return
+        if not self._dirty:
+            self._run(" && ".join(self._alf))
+            return
         pf = render(self._rules)  # raises before anything is touched
         state = json.dumps({"version": 1, "rules": [r.to_dict() for r in self._rules]}, indent=2)
         with tempfile.TemporaryDirectory(prefix="piewall-") as tmp:
@@ -181,19 +228,33 @@ class PfBackend:
                 f"/usr/bin/install -m 644 {t('pf.rules')} {q(PF_FILE)}",
                 f"/usr/bin/install -m 644 {t('daemon.plist')} {q(DAEMON_FILE)}",
                 f"({_LOAD})",
+                *self._alf,
             ]))
 
+    def _alf_apps(self, name: str) -> list[str]:
+        return [r.program for r in self._read_alf() if r.name == name]
+
     def add_rule(self, rule: Rule) -> None:
+        if rule.program and not rule.service:
+            if rule.direction != "in":
+                raise FirewallError(f"'{rule.name}': the macOS Application Firewall only "
+                                    f"filters incoming connections")
+            app = shlex.quote(rule.program)
+            verb = "--unblockapp" if rule.action == "allow" else "--blockapp"
+            self._alf_do(f"--add {app}", f"{verb} {app}")
+            return
         render_rule(rule)  # refuse before prompting for a password
         self._changed([*self._current(), rule])
 
     def delete_rules(self, name: str) -> int:
         rules = self._current()
         kept = [r for r in rules if r.name != name]
-        count = len(rules) - len(kept)
-        if count:
+        apps = self._alf_apps(name)
+        if len(kept) < len(rules):
             self._changed(kept)
-        return count
+        if apps:
+            self._alf_do(*(f"--remove {shlex.quote(a)}" for a in apps))
+        return len(rules) - len(kept) + len(apps)
 
     def _set(self, name: str, **changes) -> int:
         rules = self._current()
@@ -203,7 +264,15 @@ class PfBackend:
         return count
 
     def set_enabled(self, name: str, enabled: bool) -> int:
+        if self._alf_apps(name):
+            raise FirewallError("macOS Application Firewall rules can't be switched off one by "
+                                "one: make the rule Allow or Block, delete it, or turn the "
+                                "firewall on or off in System Settings > Network > Firewall.")
         return self._set(name, enabled=enabled)
 
     def set_action(self, name: str, action: str) -> int:
-        return self._set(name, action=action)
+        apps = self._alf_apps(name)
+        if apps:
+            verb = "--unblockapp" if action == "allow" else "--blockapp"
+            self._alf_do(*(f"{verb} {shlex.quote(a)}" for a in apps))
+        return self._set(name, action=action) + len(apps)
