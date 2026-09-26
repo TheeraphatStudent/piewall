@@ -3,7 +3,7 @@ import "cavimg"; // registers <cav-img>
 
 // On a Mac, the main Download buttons fetch the Apple Silicon build (Intel is listed in #download).
 // iPads also report "MacIntel", so rule out touch screens.
-if (/^Mac/.test(navigator.platform) && navigator.maxTouchPoints < 2) {
+if (navigator.platform.startsWith("Mac") && navigator.maxTouchPoints < 2) {
   for (const a of document.querySelectorAll<HTMLAnchorElement>("a[data-mac-href]")) {
     a.href = a.dataset.macHref!;
     const label = a.querySelector(".os-label");

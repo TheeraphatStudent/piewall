@@ -59,21 +59,24 @@ def test_changes_commit_and_batch_prompts_once(tmp_path):
     root = Root(state)
     fw = PfBackend(state, run=root)
     fw.add_rule(rule("a"))
-    assert len(root.scripts) == 1 and "pfctl -q -n -a" in root.scripts[0]
+    assert len(root.scripts) == 1
+    assert "pfctl -q -n -a" in root.scripts[0]
     with batch(fw):
         fw.add_rule(rule("b"))
         fw.set_action("a", "block")
         fw.set_enabled("b", False)
     assert len(root.scripts) == 2
     saved = {d["name"]: d for d in json.loads(state.read_text())["rules"]}
-    assert saved["a"]["action"] == "block" and saved["b"]["enabled"] is False
-    assert fw.delete_rules("a") == 1 and [r.name for r in fw.list_rules()] == ["b"]
+    assert saved["a"]["action"] == "block"
+    assert saved["b"]["enabled"] is False
+    assert fw.delete_rules("a") == 1
+    assert [r.name for r in fw.list_rules()] == ["b"]
 
 
 def test_cancel_changes_nothing(tmp_path):
     state = tmp_path / "rules.json"
     fw = PfBackend(state, run=Root(state, cancel=True))
-    with pytest.raises(ElevationCancelled):
-        with batch(fw):
-            fw.add_rule(rule())
-    assert fw.list_rules() == [] and not state.exists()
+    with pytest.raises(ElevationCancelled), batch(fw):
+        fw.add_rule(rule())
+    assert fw.list_rules() == []
+    assert not state.exists()

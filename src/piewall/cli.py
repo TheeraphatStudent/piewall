@@ -220,16 +220,20 @@ def main(argv: list[str] | None = None, *, backend_factory=None, admin_check=is_
             f = stack.enter_context(open(args.elevated_output, "w", encoding="utf-8"))
             stack.enter_context(contextlib.redirect_stdout(f))
             stack.enter_context(contextlib.redirect_stderr(f))
-        try:
-            backend = backend_factory()
-            with batch(backend):
-                return run_command(args, backend)
-        except ElevationCancelled:
-            print("Password prompt cancelled; nothing changed.", file=sys.stderr)
-            return EXIT_CANCELLED
-        except (FirewallError, OSError, ValueError) as exc:
-            print(f"Error: {exc}", file=sys.stderr)
-            return EXIT_FAIL
+        return _run(args, backend_factory)
+
+
+def _run(args: argparse.Namespace, backend_factory) -> int:
+    try:
+        backend = backend_factory()
+        with batch(backend):
+            return run_command(args, backend)
+    except ElevationCancelled:
+        print("Password prompt cancelled; nothing changed.", file=sys.stderr)
+        return EXIT_CANCELLED
+    except (FirewallError, OSError, ValueError) as exc:
+        print(f"Error: {exc}", file=sys.stderr)
+        return EXIT_FAIL
 
 
 def execute(argv: list[str], **kwargs) -> tuple[int, str]:
