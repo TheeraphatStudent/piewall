@@ -8,7 +8,7 @@ import pytest
 from piewall.backend import FirewallError, batch
 from piewall.elevate import ElevationCancelled
 from piewall.model import Rule
-from piewall.pf import PfBackend, render, render_rule
+from piewall.pf import ALF_GROUP, PfBackend, parse_alf, render, render_rule
 
 
 def rule(name="r", **kw):
@@ -57,7 +57,7 @@ class Root:
 def test_changes_commit_and_batch_prompts_once(tmp_path):
     state = tmp_path / "rules.json"
     root = Root(state)
-    fw = PfBackend(state, run=root)
+    fw = PfBackend(state, run=root, read_alf=list)
     fw.add_rule(rule("a"))
     assert len(root.scripts) == 1
     assert "pfctl -q -n -a" in root.scripts[0]
@@ -75,8 +75,69 @@ def test_changes_commit_and_batch_prompts_once(tmp_path):
 
 def test_cancel_changes_nothing(tmp_path):
     state = tmp_path / "rules.json"
-    fw = PfBackend(state, run=Root(state, cancel=True))
+    fw = PfBackend(state, run=Root(state, cancel=True), read_alf=list)
     with pytest.raises(ElevationCancelled), batch(fw):
         fw.add_rule(rule())
     assert fw.list_rules() == []
     assert not state.exists()
+
+
+LISTAPPS = """Total number of apps = 2 
+
+1 : /usr/sbin/cupsd 
+             (Allow incoming connections)
+2 : /Applications/Some Game.app 
+             (Block incoming connections)
+"""
+
+
+def test_parse_alf():
+    cups, game = parse_alf(LISTAPPS, firewall_on=True)
+    assert (cups.name, cups.action, cups.program, cups.enabled) == \
+        ("/usr/sbin/cupsd", "allow", "/usr/sbin/cupsd", True)
+    assert (game.action, game.title, game.group) == ("block", "Some Game", ALF_GROUP)
+    assert not any(r.enabled for r in parse_alf(LISTAPPS, firewall_on=False))
+
+
+class Recorder:
+    def __init__(self):
+        self.scripts = []
+
+    def __call__(self, script):
+        self.scripts.append(script)
+
+
+def alf_backend(tmp_path):
+    run = Recorder()
+    fw = PfBackend(tmp_path / "rules.json", run=run,
+                   read_alf=lambda: parse_alf(LISTAPPS, firewall_on=True))
+    return fw, run
+
+
+def test_app_rules_are_listed_and_changed_through_socketfilterfw(tmp_path):
+    fw, run = alf_backend(tmp_path)
+    assert [r.title for r in fw.list_rules()] == ["cupsd", "Some Game"]
+    with batch(fw):  # one password prompt for both
+        assert fw.set_action("/Applications/Some Game.app", "allow") == 1
+        assert fw.delete_rules("/usr/sbin/cupsd") == 1
+    assert len(run.scripts) == 1
+    assert "--unblockapp '/Applications/Some Game.app'" in run.scripts[0]
+    assert "--remove /usr/sbin/cupsd" in run.scripts[0]
+    assert "pfctl" not in run.scripts[0]  # pf untouched
+
+
+def test_program_rule_goes_to_the_application_firewall(tmp_path):
+    fw, run = alf_backend(tmp_path)
+    fw.add_rule(rule("nc", program="/usr/bin/nc", local_ports="", protocol="any",
+                     action="block"))
+    assert run.scripts == ["/usr/libexec/ApplicationFirewall/socketfilterfw --add /usr/bin/nc && "
+                           "/usr/libexec/ApplicationFirewall/socketfilterfw --blockapp /usr/bin/nc"]
+    with pytest.raises(FirewallError):
+        fw.add_rule(rule("out", program="/usr/bin/nc", direction="out"))
+
+
+def test_app_rules_cannot_be_disabled_one_by_one(tmp_path):
+    fw, run = alf_backend(tmp_path)
+    with pytest.raises(FirewallError):
+        fw.set_enabled("/usr/sbin/cupsd", False)
+    assert run.scripts == []

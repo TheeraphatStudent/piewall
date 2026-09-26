@@ -57,10 +57,12 @@ not notarized yet, so the first time macOS says it can't verify it: click **Done
 **Open Anyway** in System Settings › Privacy & Security. Uninstall:
 `sudo rm -rf /Applications/piewall.app /usr/local/bin/piewall`.
 
-On macOS piewall manages its own rules in the pf anchor `com.apple/piewall` (the stock
-`/etc/pf.conf` already loads it) and keeps them across reboots with a LaunchDaemon. pf filters
-ports and addresses, not programs, and piewall lists only the rules it manages. Every change
-asks for your administrator password; Block rules are ordered last so Block wins, as on Windows.
+On macOS piewall shows two kinds of rules. **App rules** come from the macOS Application
+Firewall (System Settings › Network › Firewall): allow or block incoming connections per app.
+They are enforced only while that firewall is on, and piewall shows them as disabled when it is
+off. **Port rules** (`open`, `close`) live in piewall's own pf anchor `com.apple/piewall` (the
+stock `/etc/pf.conf` already loads it) and survive reboots through a LaunchDaemon; Block rules
+are ordered last so Block wins, as on Windows. Every change asks for your administrator password.
 
 **Updates**: when the window opens, piewall asks GitHub once for the latest release (nothing
 else is sent). If a newer version is out, it offers to download the installer for your system.
