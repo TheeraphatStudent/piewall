@@ -3,7 +3,9 @@
 from __future__ import annotations
 
 import sys
+import threading
 import tkinter as tk
+import webbrowser
 from pathlib import Path
 from tkinter import filedialog, messagebox, ttk
 from tkinter import font as tkfont
@@ -14,7 +16,7 @@ from .elevate import ElevationCancelled, is_admin, run_elevated
 from .listeners import current_listeners
 from .model import PIEWALL_GROUP, Rule, filter_rules, parse_profiles
 from .transfer import export_rules, import_rules
-from . import theme
+from . import theme, update
 
 COLUMNS = [  # (id, heading, width, stretch)
     ("enabled", "On", 44, False),
@@ -392,6 +394,32 @@ class App:
             self.restart_as_admin()
         return False
 
+    def check_for_update(self) -> None:
+        """Ask GitHub in the background; offer the download when a newer piewall is out."""
+        found: list[tuple[str, str] | None] = []
+
+        def work() -> None:
+            try:
+                found.append(update.check())
+            except (OSError, ValueError, KeyError):  # offline, rate-limited, …: next launch
+                found.append(None)
+
+        def poll() -> None:
+            if not found:
+                self.root.after(500, poll)
+            elif found[0]:
+                self._offer_update(*found[0])
+
+        threading.Thread(target=work, daemon=True, name="piewall-update").start()
+        self.root.after(500, poll)
+
+    def _offer_update(self, version: str, url: str) -> None:
+        if messagebox.askyesno(
+                "Update available",
+                f"piewall {version} is available. You have {update.current_version()}.\n\n"
+                f"Download it now?", parent=self.root):
+            webbrowser.open(url)
+
     def restart_as_admin(self) -> None:
         try:
             run_elevated(["piewall.gui"], wait=False, windowed=True)
@@ -534,7 +562,7 @@ def main(backend_factory=None) -> None:
         from .backend import default_backend as backend_factory
     root = tk.Tk()
     theme.set_icon(root)
-    App(root, backend_factory(), is_admin())
+    App(root, backend_factory(), is_admin()).check_for_update()
     root.mainloop()
 
 

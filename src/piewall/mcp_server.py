@@ -13,7 +13,6 @@ from __future__ import annotations
 import argparse
 import os
 import sys
-from importlib import metadata
 from pathlib import Path
 from typing import Annotated, Any, Callable, Literal
 
@@ -28,6 +27,7 @@ from .backend import Backend
 from .conflicts import Listener, find_conflicts
 from .elevate import is_admin, run_elevated
 from .model import Rule, filter_rules
+from .update import current_version
 
 CLI_COMMANDS = {"list", "open", "close", "enable", "disable", "delete", "allow", "block",
                 "conflicts", "export", "import"}
@@ -56,11 +56,7 @@ RuleName = Annotated[str, Field(min_length=1, description="Exact rule name (all 
                                                           "this name are affected)")]
 
 
-def version() -> str:
-    try:
-        return metadata.version("piewall")
-    except metadata.PackageNotFoundError:
-        return "0.0.0"
+version = current_version
 
 
 def rule_json(r: Rule, *, full: bool = False) -> dict[str, Any]:

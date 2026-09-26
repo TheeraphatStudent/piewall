@@ -67,6 +67,7 @@ VSVersionInfo(
 DATAS = [
     (str(SRC / "piewall" / "assets"), "piewall/assets"),  # icons read via importlib.resources
     *collect_data_files("sv_ttk"),  # Sun Valley theme .tcl + images
+    *copy_metadata("piewall"),  # update.current_version() reads it
 ]
 # Imported lazily (inside functions or by gui.py as it evolves); list them so they are always bundled.
 HIDDEN = ["sv_ttk", "darkdetect", "win32com.client.dynamic", "win32com.shell.shell"]
@@ -76,16 +77,17 @@ EXCLUDES = [
     "sqlite3", "xmlrpc", "curses", "doctest", "pdb", "unittest",
     "win32ui", "pythonwin", "win32com.demos", "win32com.test", "win32comext.axscript",
     "numpy", "PIL",
-    # Optional C accelerators with pure-Python / builtin fallbacks (libcrypto alone is ~8 MB).
-    "_hashlib", "_ssl", "ssl", "_decimal", "_bz2", "_lzma",
+    # Optional C accelerators with pure-Python / builtin fallbacks. ssl stays: the update check
+    # talks HTTPS to GitHub.
+    "_decimal", "_bz2", "_lzma",
 ]
 # Tcl/Tk data piewall never uses: time zones (clock) and message catalogs (Windows dialogs are native).
 DROP_DATA = ("_tcl_data/tzdata/", "_tcl_data/msgs/", "_tk_data/msgs/")
 
 
-# The MCP server needs what the GUI/CLI leave out: ssl (uvicorn, httpx2 import it at start-up) and
+# The MCP server needs what the GUI/CLI leave out:
 # the mcp SDK's lazily imported modules (transports, pydantic models) plus their dist metadata.
-MCP_KEEP = {"_hashlib", "_ssl", "ssl", "_decimal", "unittest"}
+MCP_KEEP = {"_decimal", "unittest"}
 MCP_EXCLUDES = [m for m in EXCLUDES if m not in MCP_KEEP] + [
     "sv_ttk", "darkdetect", "tkinter", "_tkinter", "piewall.gui", "piewall.theme",  # console only
 ]

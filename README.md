@@ -62,6 +62,9 @@ On macOS piewall manages its own rules in the pf anchor `com.apple/piewall` (the
 ports and addresses, not programs, and piewall lists only the rules it manages. Every change
 asks for your administrator password; Block rules are ordered last so Block wins, as on Windows.
 
+**Updates**: when the window opens, piewall asks GitHub once for the latest release (nothing
+else is sent). If a newer version is out, it offers to download the installer for your system.
+
 ## Use the window
 
 Search, filter by port / action / direction / state, click a column to sort.

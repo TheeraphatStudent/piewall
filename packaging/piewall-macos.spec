@@ -10,7 +10,7 @@ import os
 import tomllib
 from pathlib import Path
 
-from PyInstaller.utils.hooks import collect_data_files
+from PyInstaller.utils.hooks import collect_data_files, copy_metadata
 
 HERE = Path(SPECPATH)  # noqa: F821 (injected by PyInstaller)
 ROOT = HERE.parent
@@ -18,7 +18,8 @@ SRC = ROOT / "src"
 VERSION = tomllib.loads((ROOT / "pyproject.toml").read_text(encoding="utf-8"))["project"]["version"]
 ICON = os.environ.get("PIEWALL_ICNS")  # made by build-macos.sh with iconutil
 
-DATAS = [(str(SRC / "piewall" / "assets"), "piewall/assets"), *collect_data_files("sv_ttk")]
+DATAS = [(str(SRC / "piewall" / "assets"), "piewall/assets"), *collect_data_files("sv_ttk"),
+         *copy_metadata("piewall")]  # update.current_version() reads it
 EXCLUDES = ["pytest", "_pytest", "pip", "setuptools", "pkg_resources", "lib2to3", "idlelib",
             "pydoc_data", "turtle", "turtledemo", "test", "tkinter.test", "numpy", "PIL",
             "mcp", "uvicorn", "starlette", "pydantic"]  # MCP server is not bundled on macOS
