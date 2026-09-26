@@ -1,0 +1,54 @@
+name: macOS
+
+# Builds piewall.app as a DMG for Apple Silicon and Intel, runs the tests, and smoke-tests the
+# bundle. Pushes and pull requests keep the DMGs as workflow artifacts; release.yml calls this
+# workflow for tags and attaches the DMGs to the GitHub Release.
+
+on:
+  push:
+    branches: ["**"]
+    tags-ignore: ["v*"]  # release.yml builds tagged versions
+    paths-ignore: ["site/**", "docs/**", "npm/**", "docker/**", "Containerfile"]
+  pull_request:
+    paths-ignore: ["site/**", "docs/**", "npm/**", "docker/**", "Containerfile"]
+  workflow_call:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: macos-${{ github.ref }}-${{ github.event_name }}
+  cancel-in-progress: ${{ !startsWith(github.ref, 'refs/tags/') }}
+
+jobs:
+  build:
+    strategy:
+      fail-fast: false
+      matrix:
+        runner: [macos-15, macos-15-intel]  # arm64, x86_64
+    runs-on: ${{ matrix.runner }}
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+
+      - uses: astral-sh/setup-uv@c18668ad3cf93ea998bef934396af7bb5c839dc7 # v10.2.0
+        with:
+          enable-cache: true
+
+      - name: Install dependencies
+        run: uv sync --locked
+
+      - name: Test and build
+        run: packaging/build-macos.sh
+
+      # Signing + notarization would go here (needs an Apple Developer ID); see packaging/README.md.
+
+      - uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: piewall-macos-${{ runner.arch }}
+          path: dist/release/piewall-macos-*
+          if-no-files-found: error
+          retention-days: 14

@@ -39,7 +39,8 @@ Tools for Windows Defender Firewall rules (piewall).
   exists, run `find_conflicts`.
 - Prefer the smallest change: `open_port` / `close_port` only touch rules in the 'piewall'
   group. Ask the user before deleting or blocking rules piewall did not create.
-- Every change shows a UAC prompt on the user's desktop; tell the user to expect it.
+- Every change shows a UAC prompt (Windows) or an administrator password prompt (macOS) on
+  the user's desktop; tell the user to expect it.
 """
 
 READ = ToolAnnotations(read_only_hint=True, open_world_hint=False)
@@ -227,13 +228,15 @@ def main(argv: list[str] | None = None) -> int:
         backend = FileBackend(Path(args.rules_file))
         server = build_server(backend, live=False, listeners=backend.listeners,
                               source=str(args.rules_file))
-    elif sys.platform == "win32":
-        from .backend import ComBackend
+    elif sys.platform in ("win32", "darwin"):
+        from .backend import default_backend
         from .listeners import current_listeners
 
-        server = build_server(ComBackend(), live=True, listeners=current_listeners)
+        source = "Windows Defender Firewall" if sys.platform == "win32" else "macOS pf"
+        server = build_server(default_backend(), live=True, listeners=current_listeners,
+                              source=source)
     else:
-        print("piewall-mcp: the live firewall is only available on Windows. Pass "
+        print("piewall-mcp: the live firewall needs Windows or macOS. Pass "
               "--rules-file (or PIEWALL_RULES_FILE) with a JSON made by `piewall export`.",
               file=sys.stderr)
         return 2

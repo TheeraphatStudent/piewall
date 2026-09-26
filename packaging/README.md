@@ -138,3 +138,15 @@ Where signing slots in (all present but commented out):
 
 Always timestamp signatures (`/tr ... /td SHA256`) so they stay valid after the certificate
 expires.
+
+## macOS
+
+`packaging/build-macos.sh` builds `dist/release/piewall-macos-<arch>.dmg` (piewall.app with the
+GUI and `Contents/MacOS/piewall-cli`), using `packaging/piewall-macos.spec`, `iconutil` and
+`hdiutil`. CI: `.github/workflows/macos.yml` builds arm64 (`macos-15`) and x86_64
+(`macos-15-intel`); on tags `release.yml` calls it and uploads the DMGs to the release.
+
+The app is signed ad hoc only, so Gatekeeper blocks the first launch until the user picks
+**Open Anyway** in System Settings › Privacy & Security. To ship it cleanly: an Apple Developer
+ID (US$99/year), `codesign --options runtime --sign "Developer ID Application: …"` in place of
+the ad hoc signature, then `xcrun notarytool submit --wait` and `xcrun stapler staple` on the DMG.

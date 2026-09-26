@@ -17,7 +17,8 @@ import Check from "@lucide/astro/icons/check";
 import Coffee from "@lucide/astro/icons/coffee";
 import Package from "@lucide/astro/icons/package";
 import FileDown from "@lucide/astro/icons/file-down";
-import { GITHUB_URL, INSTALLER_URL, PORTABLE_URL, COFFEE_URL, TAGLINE } from "../config";
+import Laptop from "@lucide/astro/icons/laptop";
+import { GITHUB_URL, INSTALLER_URL, PORTABLE_URL, MAC_ARM_URL, MAC_INTEL_URL, COFFEE_URL, TAGLINE } from "../config";
 
 const features = [
   {
@@ -33,17 +34,17 @@ const features = [
   {
     icon: ScanSearch,
     title: "Find the Block that wins.",
-    body: "Windows always lets Block beat Allow. piewall finds the Block rules undoing your openings, even the ones a dismissed popup left behind.",
+    body: "Block always beats Allow, on Windows and in piewall's macOS rules alike. piewall finds the Block rules undoing your openings, even the ones a dismissed popup left behind.",
   },
   {
     icon: ShieldCheck,
     title: "Safe by design.",
-    body: "It only reads until you act. Windows asks for permission only when something changes, and close removes only rules piewall made.",
+    body: "It only reads until you act. Your system asks for permission only when something changes, and close removes only rules piewall made.",
   },
   {
     icon: ArrowRightLeft,
     title: "Export and import.",
-    body: "Save rules as JSON and bring them to another PC. Rules that already exist are skipped.",
+    body: "Save rules as JSON and bring them to another computer. Rules that already exist are skipped.",
   },
   {
     icon: SquareTerminal,
@@ -66,22 +67,22 @@ const copyText = commands.map((c) => c.cmd).join("\n");
     <!-- Hero -->
     <section class="overflow-hidden pt-16 md:pt-24" aria-labelledby="hero-title">
       <div class="wrap text-center">
-        <p class="eyebrow">piewall for Windows</p>
+        <p class="eyebrow">piewall for Windows and Mac</p>
         <h1 id="hero-title" class="display-1 mx-auto mt-3 max-w-[11ch]">Your firewall, simple as pie.</h1>
         <p class="lede mx-auto mt-6 max-w-[34rem]">
-          See every Windows Firewall rule at a glance, open a port in one step, and catch the Block rule quietly undoing your Allow.
+          See every firewall rule at a glance, open a port in one step, and catch the Block rule quietly undoing your Allow.
         </p>
         <div class="mt-9 flex flex-col items-center justify-center gap-3 sm:flex-row">
-          <a href={INSTALLER_URL} class="btn btn-primary w-full max-w-72 sm:w-auto">
+          <a href={INSTALLER_URL} data-mac-href={MAC_ARM_URL} data-mac-label="Download for Mac" class="btn btn-primary w-full max-w-72 sm:w-auto">
             <Download size={19} stroke-width={2.2} aria-hidden="true" />
-            Download for Windows
+            <span class="os-label">Download for Windows</span>
           </a>
           <a href={GITHUB_URL} class="btn btn-secondary w-full max-w-72 sm:w-auto">
             <GitHubIcon size={18} />
             View on GitHub
           </a>
         </div>
-        <p class="mt-5 text-[0.8125rem] text-balance text-label-2">Windows 10 and 11 · Free and open source · macOS coming soon</p>
+        <p class="mt-5 text-[0.8125rem] text-balance text-label-2">Windows 10 and 11 · macOS 12 or later · Free and open source · <a class="link" href="#download">All downloads</a></p>
       </div>
       <div class="wrap mt-14 md:mt-20">
         <Shot src="/images/app-light.png" width={1180} height={720} class="shot theme-light-only" alt="The piewall window listing firewall rules with Allow and Block states, and a yellow banner reporting that a Block rule overrides an Allow rule for TCP port 8080." />
@@ -175,7 +176,7 @@ const copyText = commands.map((c) => c.cmd).join("\n");
         <div class="text-center">
           <p class="eyebrow">Light and dark</p>
           <h2 id="showcase-title" class="display-2 mx-auto mt-2 max-w-[18ch]">At home on your desktop, day or night.</h2>
-          <p class="lede mx-auto mt-5 max-w-[34rem]">piewall follows your Windows appearance. No settings to change.</p>
+          <p class="lede mx-auto mt-5 max-w-[34rem]">piewall follows your system appearance. No settings to change.</p>
         </div>
         <div class="mt-14 grid gap-8 md:grid-cols-2 md:gap-6">
           <figure>
@@ -197,9 +198,9 @@ const copyText = commands.map((c) => c.cmd).join("\n");
       <div class="wrap">
         <div class="text-center">
           <h2 id="download-title" class="display-2">Get piewall.</h2>
-          <p class="lede mx-auto mt-5 max-w-[32rem]">Free for Windows 10 and 11. Reading your rules needs no admin rights.</p>
+          <p class="lede mx-auto mt-5 max-w-[32rem]">Free for Windows 10 and 11, and macOS 12 or later. Reading your rules needs no admin rights.</p>
         </div>
-        <div class="mx-auto mt-12 grid max-w-[46rem] gap-4 sm:grid-cols-2">
+        <div class="mx-auto mt-12 grid max-w-[46rem] gap-4 sm:grid-cols-2 lg:max-w-[68rem] lg:grid-cols-3">
           <div class="flex flex-col rounded-[var(--radius-card)] bg-surface p-7">
             <Package size={28} stroke-width={1.8} class="text-label" aria-hidden="true" />
             <h3 class="mt-4 text-[1.3125rem] font-semibold tracking-[-0.02em]">Installer</h3>
@@ -214,6 +215,16 @@ const copyText = commands.map((c) => c.cmd).join("\n");
             <h3 class="mt-4 text-[1.3125rem] font-semibold tracking-[-0.02em]">Portable</h3>
             <p class="mt-1 mb-6 text-label-2">One .exe, nothing to install. Run it from anywhere.</p>
             <a href={PORTABLE_URL} class="btn btn-secondary mt-auto">Download Portable .exe</a>
+          </div>
+          <div class="flex flex-col rounded-[var(--radius-card)] bg-surface p-7 sm:col-span-2 lg:col-span-1">
+            <Laptop size={28} stroke-width={1.8} class="text-label" aria-hidden="true" />
+            <h3 class="mt-4 text-[1.3125rem] font-semibold tracking-[-0.02em]">Mac</h3>
+            <p class="mt-1 mb-6 text-label-2">Drag piewall to Applications. Rules use the built-in pf firewall. First launch: open it once, then choose Open Anyway in System Settings › Privacy &amp; Security.</p>
+            <a href={MAC_ARM_URL} class="btn btn-secondary mt-auto">
+              <Download size={19} stroke-width={2.2} aria-hidden="true" />
+              Apple Silicon (.dmg)
+            </a>
+            <a href={MAC_INTEL_URL} class="link mt-1 flex min-h-11 items-center justify-center text-[0.875rem]">Intel Mac (.dmg)</a>
           </div>
         </div>
         <p class="mt-6 text-center text-[0.8125rem] text-label-2">

@@ -3,7 +3,8 @@
 import sys
 
 import pytest
-import pywintypes
+
+pywintypes = pytest.importorskip("pywintypes")  # Windows-only module
 import win32con
 import win32event
 import win32process

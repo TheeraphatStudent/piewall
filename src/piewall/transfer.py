@@ -65,6 +65,6 @@ class FileBackend:
 
     def _read_only(self, *_args) -> int:
         raise FirewallError(f"{self.path.name} is a read-only export; changes need the live "
-                            f"firewall on Windows.")
+                            f"firewall on Windows or macOS.")
 
     add_rule = delete_rules = set_enabled = set_action = _read_only

@@ -2,12 +2,13 @@
 
 from __future__ import annotations
 
+import sys
 import tkinter as tk
 from pathlib import Path
 from tkinter import filedialog, messagebox, ttk
 from tkinter import font as tkfont
 
-from .backend import Backend, FirewallError
+from .backend import Backend, FirewallError, batch
 from .conflicts import Conflict, find_conflicts
 from .elevate import ElevationCancelled, is_admin, run_elevated
 from .listeners import current_listeners
@@ -128,7 +129,7 @@ class App:
         self.sort_column, self.sort_reverse = "name", False
         self.pal = theme.palette_for(theme.system_mode())
 
-        root.title("piewall" + ("  (Administrator)" if admin else ""))
+        root.title("piewall" + ("  (Administrator)" if admin and sys.platform == "win32" else ""))
         root.geometry("1180x680")
         root.minsize(760, 420)
         self._style()
@@ -400,7 +401,10 @@ class App:
 
     def _apply(self, work) -> None:
         try:
-            work()
+            with batch(self.backend):
+                work()
+        except ElevationCancelled:
+            pass
         except FirewallError as exc:
             messagebox.showerror("piewall", str(exc), parent=self.root)
         self.reload()
@@ -452,7 +456,11 @@ class App:
         if not path:
             return
         try:
-            added, skipped = import_rules(self.backend, Path(path))
+            with batch(self.backend):
+                added, skipped = import_rules(self.backend, Path(path))
+        except ElevationCancelled:
+            self.reload()
+            return
         except (FirewallError, ValueError, KeyError, OSError) as exc:
             messagebox.showerror("Import", f"Import failed:\n{exc}", parent=self.root)
         else:
@@ -523,7 +531,7 @@ def main(backend_factory=None) -> None:
     theme.set_dpi_awareness()
     theme.set_app_id()
     if backend_factory is None:
-        from .backend import ComBackend as backend_factory
+        from .backend import default_backend as backend_factory
     root = tk.Tk()
     theme.set_icon(root)
     App(root, backend_factory(), is_admin())

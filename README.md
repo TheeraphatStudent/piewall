@@ -5,7 +5,7 @@
 <h1 align="center">piewall</h1>
 
 <p align="center"><strong>Your firewall, simple as pie.</strong><br>
-Manage Windows Defender Firewall rules from a clean window or the command line.</p>
+Manage Windows Defender Firewall (or macOS pf) rules from a clean window or the command line.</p>
 
 <p align="center">
   <a href="https://piewall.th33raphat.dev">Website</a> ·
@@ -49,6 +49,16 @@ Download from [Releases](https://github.com/TheeraphatStudent/piewall/releases/l
 Builds are not code-signed yet, so Windows SmartScreen may show
 "Windows protected your PC" the first time: choose **More info → Run anyway**.
 Checksums are in `SHA256SUMS.txt`.
+
+**macOS 12+**: `piewall-macos-arm64.dmg` (Apple Silicon) or `piewall-macos-x86_64.dmg` (Intel).
+Drag piewall to Applications. It is not notarized yet: open it once, then choose
+**Open Anyway** in System Settings › Privacy & Security. The command line is inside the app:
+`/Applications/piewall.app/Contents/MacOS/piewall-cli`.
+
+On macOS piewall manages its own rules in the pf anchor `com.apple/piewall` (the stock
+`/etc/pf.conf` already loads it) and keeps them across reboots with a LaunchDaemon. pf filters
+ports and addresses, not programs, and piewall lists only the rules it manages. Every change
+asks for your administrator password; Block rules are ordered last so Block wins, as on Windows.
 
 ## Use the window
 
@@ -117,7 +127,7 @@ podman run --rm -p 8000:8000 -e PIEWALL_TRANSPORT=streamable-http -e PIEWALL_HOS
 
 ## Develop
 
-Needs [uv](https://docs.astral.sh/uv/) and Windows 10/11.
+Needs [uv](https://docs.astral.sh/uv/) and Windows 10/11 or macOS 12+.
 
 ```powershell
 uv sync
@@ -125,6 +135,7 @@ uv run piewall-gui               # window from source
 uv run piewall list              # CLI from source
 uv run pytest                    # tests
 powershell -File packaging\build.ps1   # build exes + installer into dist\release
+packaging/build-macos.sh               # macOS: build piewall.app + .dmg into dist/release
 ```
 
 - Releases: bump `version` in `pyproject.toml`, tag `vX.Y.Z`, push the tag;
